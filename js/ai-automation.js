@@ -3,9 +3,9 @@
 async function refreshAIInsights() {
   var container = document.getElementById('aiInsightsContent');
   if (!container) return;
-  var { data: patients } = await supabase.from('patients').select('id', { count: 'exact' });
-  var { data: appointments } = await supabase.from('appointments').select('id, status');
-  var { data: prescriptions } = await supabase.from('prescriptions').select('id, status');
+  var { data: patients } = await db.from('patients').select('id', { count: 'exact' });
+  var { data: appointments } = await db.from('appointments').select('id, status');
+  var { data: prescriptions } = await db.from('prescriptions').select('id, status');
 
   var totalP = patients ? patients.length : 0;
   var totalA = appointments ? appointments.length : 0;

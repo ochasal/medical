@@ -1,7 +1,7 @@
 // ===== SIGNOS VITALES (Supabase) =====
 
 async function openNewVitalSignsModal() {
-  var { data: patients } = await supabase.from('patients').select('id, name, lastname').order('name');
+  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('vitalSignsPatient');
   select.innerHTML = '<option value="">Seleccionar</option>';
   if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
@@ -12,7 +12,7 @@ async function openNewVitalSignsModal() {
 function closeVitalSignsModal() { document.getElementById('vitalSignsModal').style.display = 'none'; }
 
 async function refreshVitalSigns() {
-  var { data: records, error } = await supabase.from('vital_signs').select('*, patients(name, lastname)').order('date', { ascending: false });
+  var { data: records, error } = await db.from('vital_signs').select('*, patients(name, lastname)').order('date', { ascending: false });
   if (error) { console.error(error); return; }
   var tbody = document.getElementById('vitalSignsTableBody');
   if (!tbody) return;
@@ -30,7 +30,7 @@ async function refreshVitalSigns() {
 }
 
 async function viewVitalDetails(id) {
-  var { data: r } = await supabase.from('vital_signs').select('*, patients(name, lastname)').eq('id', id).single();
+  var { data: r } = await db.from('vital_signs').select('*, patients(name, lastname)').eq('id', id).single();
   if (!r) return;
   var patient = r.patients || {};
   var bmi = r.weight && r.height ? (r.weight / Math.pow(r.height / 100, 2)).toFixed(1) : 'N/A';
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         weight: parseFloat(document.getElementById('vitalSignsWeight').value) || null,
         height: parseFloat(document.getElementById('vitalSignsHeight').value) || null
       };
-      var { error } = await supabase.from('vital_signs').insert(data);
+      var { error } = await db.from('vital_signs').insert(data);
       if (error) { showToast('error', 'Error', error.message); return; }
       closeVitalSignsModal();
       refreshVitalSigns();

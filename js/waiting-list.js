@@ -1,7 +1,7 @@
 // ===== LISTA DE ESPERA (Supabase) =====
 
 async function openNewWaitingListModal() {
-  var { data: patients } = await supabase.from('patients').select('id, name, lastname').order('name');
+  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('waitingListPatient');
   select.innerHTML = '<option value="">Seleccionar</option>';
   if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
@@ -11,7 +11,7 @@ async function openNewWaitingListModal() {
 function closeWaitingListModal() { document.getElementById('waitingListModal').style.display = 'none'; }
 
 async function refreshWaitingList() {
-  var { data: list, error } = await supabase.from('waiting_list').select('*, patients(name, lastname)').order('created_at', { ascending: false });
+  var { data: list, error } = await db.from('waiting_list').select('*, patients(name, lastname)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   var tbody = document.getElementById('waitingListTableBody');
   if (!tbody) return;
@@ -29,7 +29,7 @@ async function refreshWaitingList() {
 }
 
 async function removeFromWaitingList(id) {
-  await supabase.from('waiting_list').delete().eq('id', id);
+  await db.from('waiting_list').delete().eq('id', id);
   refreshWaitingList();
 }
 
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
         priority: document.getElementById('waitingListPriority').value,
         status: 'waiting'
       };
-      var { error } = await supabase.from('waiting_list').insert(data);
+      var { error } = await db.from('waiting_list').insert(data);
       if (error) { showToast('error', 'Error', error.message); return; }
       closeWaitingListModal();
       refreshWaitingList();

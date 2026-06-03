@@ -5,7 +5,7 @@ async function loadAllPatients() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando...</td></tr>';
 
-  var { data: patients, error } = await supabase.from('patients').select('*').order('created_at', { ascending: false });
+  var { data: patients, error } = await db.from('patients').select('*').order('created_at', { ascending: false });
   if (error) { console.error('Error loading patients:', error); return; }
 
   tbody.innerHTML = '';
@@ -38,7 +38,7 @@ function openNewPatientModal() {
 function closePatientModal() { document.getElementById('patientModal').style.display = 'none'; }
 
 async function editPatient(patientId) {
-  var { data: patient, error } = await supabase.from('patients').select('*').eq('id', patientId).single();
+  var { data: patient, error } = await db.from('patients').select('*').eq('id', patientId).single();
   if (error || !patient) return;
   document.getElementById('patientModalTitle').textContent = 'Editar Paciente';
   document.getElementById('editPatientId').value = patientId;
@@ -58,7 +58,7 @@ async function editPatient(patientId) {
 
 async function deletePatient(patientId) {
   showConfirm('Eliminar Paciente', 'Esta acción no se puede deshacer.', async function() {
-    var { error } = await supabase.from('patients').delete().eq('id', patientId);
+    var { error } = await db.from('patients').delete().eq('id', patientId);
     if (error) { showToast('error', 'Error', 'No se pudo eliminar'); return; }
     loadAllPatients();
     showToast('success', 'Eliminado', 'Paciente eliminado correctamente');
@@ -100,9 +100,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
       var error;
       if (editId) {
-        ({ error } = await supabase.from('patients').update(patientData).eq('id', editId));
+        ({ error } = await db.from('patients').update(patientData).eq('id', editId));
       } else {
-        ({ error } = await supabase.from('patients').insert(patientData));
+        ({ error } = await db.from('patients').insert(patientData));
       }
 
       if (error) { showToast('error', 'Error', error.message); return; }

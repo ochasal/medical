@@ -9,7 +9,7 @@ function openNewOfficeModal() {
 function closeOfficeModal() { document.getElementById('officeModal').style.display = 'none'; }
 
 async function loadOffices() {
-  var { data: offices, error } = await supabase.from('offices').select('*').order('created_at', { ascending: false });
+  var { data: offices, error } = await db.from('offices').select('*').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   var container = document.getElementById('officesContent');
   if (!container) return;
@@ -30,7 +30,7 @@ async function loadOffices() {
 
 async function deleteOffice(id) {
   showConfirm('Eliminar Consultorio', '¿Está seguro?', async function() {
-    await supabase.from('offices').delete().eq('id', id);
+    await db.from('offices').delete().eq('id', id);
     loadOffices();
     showToast('success', 'Eliminado', 'Consultorio eliminado');
   });
@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
         days: days
       };
       var error;
-      if (editId) { ({ error } = await supabase.from('offices').update(data).eq('id', editId)); }
-      else { ({ error } = await supabase.from('offices').insert(data)); }
+      if (editId) { ({ error } = await db.from('offices').update(data).eq('id', editId)); }
+      else { ({ error } = await db.from('offices').insert(data)); }
       if (error) { showToast('error', 'Error', error.message); return; }
       closeOfficeModal();
       loadOffices();

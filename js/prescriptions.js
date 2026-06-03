@@ -1,7 +1,7 @@
 // ===== RECETAS (Supabase) =====
 
 async function openNewPrescriptionModal() {
-  var { data: patients } = await supabase.from('patients').select('id, name, lastname').order('name');
+  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('prescriptionPatient');
   select.innerHTML = '<option value="">Seleccionar</option>';
   if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
@@ -13,7 +13,7 @@ async function openNewPrescriptionModal() {
 function closePrescriptionModal() { document.getElementById('prescriptionModal').style.display = 'none'; }
 
 async function refreshPrescriptions() {
-  var { data: prescriptions, error } = await supabase.from('prescriptions').select('*, patients(name, lastname)').order('created_at', { ascending: false });
+  var { data: prescriptions, error } = await db.from('prescriptions').select('*, patients(name, lastname)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   var tbody = document.getElementById('prescriptionsTableBody');
   if (!tbody) return;
@@ -45,7 +45,7 @@ async function refreshPrescriptions() {
 }
 
 async function editPrescription(id) {
-  var { data: rx } = await supabase.from('prescriptions').select('*').eq('id', id).single();
+  var { data: rx } = await db.from('prescriptions').select('*').eq('id', id).single();
   if (!rx) return;
   await openNewPrescriptionModal();
   document.getElementById('prescriptionEditId').value = id;
@@ -62,7 +62,7 @@ async function editPrescription(id) {
 
 async function deletePrescription(id) {
   showConfirm('Eliminar Receta', '¿Está seguro?', async function() {
-    var { error } = await supabase.from('prescriptions').delete().eq('id', id);
+    var { error } = await db.from('prescriptions').delete().eq('id', id);
     if (error) { showToast('error', 'Error', error.message); return; }
     refreshPrescriptions();
     showToast('success', 'Eliminada', 'Receta eliminada');
@@ -95,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
         notes: document.getElementById('prescriptionNotes').value
       };
       var error;
-      if (editId) { ({ error } = await supabase.from('prescriptions').update(data).eq('id', editId)); }
-      else { ({ error } = await supabase.from('prescriptions').insert(data)); }
+      if (editId) { ({ error } = await db.from('prescriptions').update(data).eq('id', editId)); }
+      else { ({ error } = await db.from('prescriptions').insert(data)); }
       if (error) { showToast('error', 'Error', error.message); return; }
       closePrescriptionModal();
       refreshPrescriptions();

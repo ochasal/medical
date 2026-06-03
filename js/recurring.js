@@ -1,7 +1,7 @@
 // ===== CITAS RECURRENTES (Supabase) =====
 
 async function openNewRecurringAppointmentModal() {
-  var { data: patients } = await supabase.from('patients').select('id, name, lastname').order('name');
+  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('recurringPatient');
   select.innerHTML = '<option value="">Seleccionar</option>';
   if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
@@ -11,7 +11,7 @@ async function openNewRecurringAppointmentModal() {
 function closeRecurringAppointmentModal() { document.getElementById('recurringAppointmentModal').style.display = 'none'; }
 
 async function refreshRecurringAppointments() {
-  var { data: recurring, error } = await supabase.from('recurring_appointments').select('*, patients(name, lastname)').order('created_at', { ascending: false });
+  var { data: recurring, error } = await db.from('recurring_appointments').select('*, patients(name, lastname)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   var tbody = document.getElementById('recurringAppointmentsTableBody');
   if (!tbody) return;
@@ -30,13 +30,13 @@ async function refreshRecurringAppointments() {
 }
 
 async function toggleRecurring(id, currentState) {
-  var { error } = await supabase.from('recurring_appointments').update({ is_active: !currentState }).eq('id', id);
+  var { error } = await db.from('recurring_appointments').update({ is_active: !currentState }).eq('id', id);
   if (!error) refreshRecurringAppointments();
 }
 
 async function deleteRecurring(id) {
   if (confirm('¿Eliminar esta cita recurrente?')) {
-    await supabase.from('recurring_appointments').delete().eq('id', id);
+    await db.from('recurring_appointments').delete().eq('id', id);
     refreshRecurringAppointments();
   }
 }
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
         days_of_week: daysOfWeek,
         is_active: true
       };
-      var { error } = await supabase.from('recurring_appointments').insert(data);
+      var { error } = await db.from('recurring_appointments').insert(data);
       if (error) { showToast('error', 'Error', error.message); return; }
       closeRecurringAppointmentModal();
       refreshRecurringAppointments();

@@ -1,7 +1,7 @@
 // ===== PLANES DE TRATAMIENTO (Supabase) =====
 
 async function openNewTreatmentPlanModal() {
-  var { data: patients } = await supabase.from('patients').select('id, name, lastname').order('name');
+  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('treatmentPlanPatient');
   select.innerHTML = '<option value="">Seleccionar</option>';
   if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
@@ -13,7 +13,7 @@ async function openNewTreatmentPlanModal() {
 function closeTreatmentPlanModal() { document.getElementById('treatmentPlanModal').style.display = 'none'; }
 
 async function refreshTreatmentPlans() {
-  var { data: plans, error } = await supabase.from('treatment_plans').select('*, patients(name, lastname)').order('created_at', { ascending: false });
+  var { data: plans, error } = await db.from('treatment_plans').select('*, patients(name, lastname)').order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   var tbody = document.getElementById('treatmentPlansTableBody');
   if (!tbody) return;
@@ -44,7 +44,7 @@ async function refreshTreatmentPlans() {
 }
 
 async function editTreatmentPlan(id) {
-  var { data: tp } = await supabase.from('treatment_plans').select('*').eq('id', id).single();
+  var { data: tp } = await db.from('treatment_plans').select('*').eq('id', id).single();
   if (!tp) return;
   await openNewTreatmentPlanModal();
   document.getElementById('treatmentPlanEditId').value = id;
@@ -61,7 +61,7 @@ async function editTreatmentPlan(id) {
 
 async function deleteTreatmentPlan(id) {
   showConfirm('Eliminar Plan', '¿Está seguro?', async function() {
-    var { error } = await supabase.from('treatment_plans').delete().eq('id', id);
+    var { error } = await db.from('treatment_plans').delete().eq('id', id);
     if (error) { showToast('error', 'Error', error.message); return; }
     refreshTreatmentPlans();
     showToast('success', 'Eliminado', 'Plan eliminado');
@@ -95,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
         follow_up: document.getElementById('treatmentPlanFollowUp').value
       };
       var error;
-      if (editId) { ({ error } = await supabase.from('treatment_plans').update(data).eq('id', editId)); }
-      else { ({ error } = await supabase.from('treatment_plans').insert(data)); }
+      if (editId) { ({ error } = await db.from('treatment_plans').update(data).eq('id', editId)); }
+      else { ({ error } = await db.from('treatment_plans').insert(data)); }
       if (error) { showToast('error', 'Error', error.message); return; }
       closeTreatmentPlanModal();
       refreshTreatmentPlans();

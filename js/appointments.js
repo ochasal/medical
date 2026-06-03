@@ -5,7 +5,7 @@ async function loadAppointments() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Cargando...</td></tr>';
 
-  var { data: appointments, error } = await supabase.from('appointments').select('*, patients(name, lastname, patient_id, phone)').order('date', { ascending: false });
+  var { data: appointments, error } = await db.from('appointments').select('*, patients(name, lastname, patient_id, phone)').order('date', { ascending: false });
   if (error) { console.error('Error loading appointments:', error); return; }
 
   tbody.innerHTML = '';
@@ -35,7 +35,7 @@ async function loadAppointments() {
 }
 
 async function openScheduleModal() {
-  var { data: patients } = await supabase.from('patients').select('id, name, lastname').order('name');
+  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('schedulePatient');
   select.innerHTML = '<option value="">Seleccionar paciente</option>';
   if (patients) patients.forEach(function(p) {
@@ -49,7 +49,7 @@ function closeScheduleModal() { document.getElementById('scheduleModal').style.d
 
 async function cancelAppointment(id) {
   showConfirm('Cancelar Cita', '¿Desea cancelar esta cita?', async function() {
-    var { error } = await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', id);
+    var { error } = await db.from('appointments').update({ status: 'cancelled' }).eq('id', id);
     if (error) { showToast('error', 'Error', error.message); return; }
     loadAppointments();
     showToast('success', 'Cancelada', 'Cita cancelada');
@@ -57,7 +57,7 @@ async function cancelAppointment(id) {
 }
 
 async function openConsultation(id) {
-  var { data: apt } = await supabase.from('appointments').select('*, patients(name, lastname, patient_id, phone)').eq('id', id).single();
+  var { data: apt } = await db.from('appointments').select('*, patients(name, lastname, patient_id, phone)').eq('id', id).single();
   if (!apt) return;
   var patient = apt.patients || {};
   document.getElementById('consultViewPatientName').textContent = (patient.name || '') + ' ' + (patient.lastname || '');
@@ -87,14 +87,14 @@ async function saveConsultation() {
   };
 
   // Get patient_id from appointment
-  var { data: apt } = await supabase.from('appointments').select('patient_id').eq('id', appointmentId).single();
+  var { data: apt } = await db.from('appointments').select('patient_id').eq('id', appointmentId).single();
   if (apt) consultationData.patient_id = apt.patient_id;
 
-  var { error } = await supabase.from('consultations').insert(consultationData);
+  var { error } = await db.from('consultations').insert(consultationData);
   if (error) { showToast('error', 'Error', error.message); return; }
 
   // Mark appointment as completed
-  await supabase.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
+  await db.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
 
   showToast('success', 'Guardada', 'Consulta registrada correctamente');
   showView('appointments');
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notes: document.getElementById('scheduleNotes').value,
         status: 'scheduled'
       };
-      var { error } = await supabase.from('appointments').insert(appointmentData);
+      var { error } = await db.from('appointments').insert(appointmentData);
       if (error) { showToast('error', 'Error', error.message); return; }
       closeScheduleModal();
       loadAppointments();

@@ -77,9 +77,9 @@ function setupNavigation() {
 
 // ===== DASHBOARD =====
 async function refreshDashboard() {
-  var { data: patients } = await supabase.from('patients').select('id');
-  var { data: appointments } = await supabase.from('appointments').select('id, date, status');
-  var { data: prescriptions } = await supabase.from('prescriptions').select('id, status');
+  var { data: patients } = await db.from('patients').select('id');
+  var { data: appointments } = await db.from('appointments').select('id, date, status');
+  var { data: prescriptions } = await db.from('prescriptions').select('id, status');
 
   document.getElementById('totalPatients').textContent = patients ? patients.length : 0;
   var today = new Date().toISOString().split('T')[0];
@@ -95,7 +95,7 @@ async function exportAllData() {
   var backup = {};
   var tables = ['patients', 'appointments', 'consultations', 'prescriptions', 'treatment_plans', 'vital_signs', 'recurring_appointments', 'waiting_list', 'offices'];
   for (var i = 0; i < tables.length; i++) {
-    var { data } = await supabase.from(tables[i]).select('*');
+    var { data } = await db.from(tables[i]).select('*');
     backup[tables[i]] = data || [];
   }
   backup.timestamp = new Date().toISOString();
