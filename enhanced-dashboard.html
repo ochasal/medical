@@ -1,0 +1,804 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema Médico Avanzado - Dashboard</title>
+  <link rel="stylesheet" href="dashboard-styles.css" />
+  <link rel="stylesheet" href="enhanced-dashboard-styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Confirm Modal -->
+<div id="confirmModal" class="modal" style="z-index: 10000;">
+  <div class="modal-content" style="max-width: 400px; margin-top: 15vh;">
+    <div style="padding: 2rem; text-align: center;">
+      <div id="confirmIcon" style="font-size: 3rem; margin-bottom: 1rem;">&#9888;</div>
+      <h3 id="confirmTitle" style="margin: 0 0 0.5rem 0;">¿Está seguro?</h3>
+      <p id="confirmMessage" style="color: var(--text-secondary); margin: 0 0 1.5rem 0;"></p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button id="confirmBtnOk" class="btn btn-danger">Confirmar</button>
+        <button id="confirmBtnCancel" class="btn btn-secondary" onclick="closeConfirm()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Login Screen -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-container">
+    <div class="login-logo"><i class="fas fa-hospital fa-3x"></i></div>
+    <h1 class="login-title">Sistema Médico</h1>
+    <p class="login-subtitle">Inicie sesión para continuar</p>
+    <form id="loginForm" class="login-form">
+      <div class="login-field">
+        <label for="loginEmail"><i class="fas fa-envelope"></i> Email</label>
+        <input type="email" id="loginEmail" placeholder="doctor@clinica.com" required />
+      </div>
+      <div class="login-field">
+        <label for="loginPassword"><i class="fas fa-lock"></i> Contraseña</label>
+        <input type="password" id="loginPassword" placeholder="********" required />
+      </div>
+      <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
+      <p id="loginError" class="login-error" style="display:none;"></p>
+      <p class="login-hint">Demo: admin@clinica.com / admin123</p>
+    </form>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="header" id="navigation">
+  <div class="header-content">
+    <div class="logo-section"><h1><i class="fas fa-hospital"></i> Sistema Médico</h1></div>
+    <div class="header-controls">
+      <button id="sidebarToggle" class="sidebar-toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <div class="user-menu" id="userMenu">
+        <button class="user-btn" onclick="toggleUserMenu()">
+          <i class="fas fa-user-md"></i> <span id="headerUserName">Doctor</span> <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-header">
+            <strong id="dropdownUserName">Doctor</strong>
+            <small id="dropdownUserEmail">email@clinica.com</small>
+          </div>
+          <a href="#" onclick="showView('user-profile'); toggleUserMenu(); return false;"><i class="fas fa-user"></i> Mi Perfil</a>
+          <a href="#" onclick="logout(); return false;" class="logout-link"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <h3>Principal</h3>
+        <ul>
+          <li><a href="#dashboard" class="nav-link active" data-view="dashboard"><i class="fas fa-tachometer-alt"></i> Inicio</a></li>
+          <li><a href="#patients" class="nav-link" data-view="patients"><i class="fas fa-users"></i> Pacientes</a></li>
+          <li><a href="#appointments" class="nav-link" data-view="appointments"><i class="fas fa-calendar-alt"></i> Citas</a></li>
+          <li><a href="#medical-records" class="nav-link" data-view="medical-records"><i class="fas fa-file-medical"></i> Historias</a></li>
+          <li><a href="#offices" class="nav-link" data-view="offices"><i class="fas fa-hospital"></i> Consultorios</a></li>
+        </ul>
+      </div>
+      <div class="nav-section">
+        <h3>Gestión Médica</h3>
+        <ul>
+          <li><a href="#prescriptions" class="nav-link" data-view="prescriptions"><i class="fas fa-prescription-bottle"></i> Recetas</a></li>
+          <li><a href="#treatment-plans" class="nav-link" data-view="treatment-plans"><i class="fas fa-tasks"></i> Planes de Tratamiento</a></li>
+          <li><a href="#vital-signs" class="nav-link" data-view="vital-signs"><i class="fas fa-heartbeat"></i> Signos Vitales</a></li>
+          <li><a href="#recurring-appointments" class="nav-link" data-view="recurring-appointments"><i class="fas fa-redo"></i> Citas Recurrentes</a></li>
+          <li><a href="#waiting-list" class="nav-link" data-view="waiting-list"><i class="fas fa-hourglass-half"></i> Lista de Espera</a></li>
+        </ul>
+      </div>
+      <div class="nav-section">
+        <h3>Avanzado</h3>
+        <ul>
+          <li><a href="#ai-insights" class="nav-link" data-view="ai-insights"><i class="fas fa-brain"></i> Insights IA</a></li>
+          <li><a href="#automation" class="nav-link" data-view="automation"><i class="fas fa-robot"></i> Automatización</a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="main-content">
+
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="view active">
+      <div class="view-header">
+        <h2>Inicio</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="refreshDashboard()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+          <button class="btn btn-success" onclick="exportAllData()"><i class="fas fa-download"></i> Backup</button>
+          <button class="btn btn-info" onclick="document.getElementById('importBackupInput').click()"><i class="fas fa-upload"></i> Restaurar</button>
+          <input type="file" id="importBackupInput" accept=".json" style="display:none;" onchange="importBackup(this.files[0])">
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-content"><h3 id="totalPatients">0</h3><p>Pacientes Totales</p></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+          <div class="stat-content"><h3 id="todayAppointments">0</h3><p>Citas Hoy</p></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="stat-content"><h3 id="highRiskPatients">0</h3><p>Pacientes Alto Riesgo</p></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-prescription-bottle"></i></div>
+          <div class="stat-content"><h3 id="activePrescriptions">0</h3><p>Recetas Activas</p></div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><h3>Citas por Día</h3><canvas id="appointmentsChart"></canvas></div>
+        <div class="chart-card"><h3>Estado de Citas</h3><canvas id="healthTrendsChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Patients View -->
+    <div id="patients-view" class="view">
+      <div class="view-header">
+        <h2>Gestión de Pacientes</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewPatientModal()"><i class="fas fa-plus"></i> Nuevo Paciente</button>
+          <button class="btn btn-secondary" onclick="refreshPatients()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Buscar:</label>
+          <input type="text" id="patientSearchField" placeholder="Nombre, teléfono, ID..." onkeyup="searchAllPatients()" />
+        </div>
+        <div class="filter-group">
+          <label>Estado:</label>
+          <select id="patientStatusFilter" onchange="filterPatients()">
+            <option value="">Todos</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="patientsTable">
+          <thead>
+            <tr>
+              <th>Paciente</th><th>ID</th><th>Edad</th><th>Teléfono</th><th>Última Cita</th><th>Próxima Cita</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="patientsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Appointments View -->
+    <div id="appointments-view" class="view">
+      <div class="view-header">
+        <h2>Gestión de Citas</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Nueva Cita</button>
+          <button class="btn btn-secondary" onclick="refreshAppointments()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Estado:</label>
+          <select id="appointmentStatusFilter" onchange="filterAppointments()">
+            <option value="">Todos</option>
+            <option value="scheduled">Programada</option>
+            <option value="completed">Completada</option>
+            <option value="cancelled">Cancelada</option>
+            <option value="no-show">No asistió</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Buscar:</label>
+          <input type="text" id="appointmentSearchField" placeholder="Nombre del paciente..." onkeyup="searchAppointments()" />
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="appointmentsTable">
+          <thead>
+            <tr>
+              <th>Paciente</th><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Estado</th><th>Consultorio</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="appointmentsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Medical Records View -->
+    <div id="medical-records-view" class="view">
+      <div class="view-header">
+        <h2>Historias Médicas</h2>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Buscar paciente:</label>
+          <input type="text" id="medicalRecordsSearch" placeholder="Buscar paciente..." onkeyup="searchMedicalRecords()" />
+        </div>
+      </div>
+      <div id="medicalRecordsContent">
+        <p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Seleccione un paciente para ver su historial médico.</p>
+      </div>
+    </div>
+
+    <!-- Offices View -->
+    <div id="offices-view" class="view">
+      <div class="view-header">
+        <h2>Consultorios</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewOfficeModal()"><i class="fas fa-plus"></i> Nuevo Consultorio</button>
+        </div>
+      </div>
+      <div id="officesContent"></div>
+    </div>
+
+    <!-- Prescriptions View -->
+    <div id="prescriptions-view" class="view">
+      <div class="view-header">
+        <h2>Recetas Médicas</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewPrescriptionModal()"><i class="fas fa-plus"></i> Nueva Receta</button>
+          <button class="btn btn-secondary" onclick="refreshPrescriptions()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+          <button class="btn btn-info" onclick="exportPrescriptionsPDF()"><i class="fas fa-download"></i> Exportar PDF</button>
+        </div>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Buscar:</label>
+          <input type="text" id="prescriptionSearchField" placeholder="Paciente, medicamento..." onkeyup="searchPrescriptions()" />
+        </div>
+        <div class="filter-group">
+          <label>Estado:</label>
+          <select id="prescriptionStatusFilter" onchange="filterPrescriptions()">
+            <option value="">Todos</option>
+            <option value="active">Activa</option>
+            <option value="completed">Completada</option>
+            <option value="cancelled">Cancelada</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="prescriptionsTable">
+          <thead>
+            <tr>
+              <th>Paciente</th><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Vigencia</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="prescriptionsTableBody"></tbody>
+        </table>
+      </div>
+      <div class="appointments-summary">
+        <div class="summary-card">
+          <h4>Resumen de Recetas</h4>
+          <div class="summary-stats">
+            <div class="summary-stat"><span class="stat-label">Total:</span><span class="stat-value" id="totalPrescriptionsCount">0</span></div>
+            <div class="summary-stat"><span class="stat-label">Activas:</span><span class="stat-value" id="activePrescriptionsCount">0</span></div>
+            <div class="summary-stat"><span class="stat-label">Completadas:</span><span class="stat-value" id="completedPrescriptionsCount">0</span></div>
+            <div class="summary-stat"><span class="stat-label">Canceladas:</span><span class="stat-value" id="cancelledPrescriptionsCount">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Treatment Plans View -->
+    <div id="treatment-plans-view" class="view">
+      <div class="view-header">
+        <h2>Planes de Tratamiento</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewTreatmentPlanModal()"><i class="fas fa-plus"></i> Nuevo Plan</button>
+          <button class="btn btn-secondary" onclick="refreshTreatmentPlans()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+          <button class="btn btn-info" onclick="exportTreatmentPlans()"><i class="fas fa-download"></i> Exportar</button>
+        </div>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Buscar:</label>
+          <input type="text" id="treatmentPlanSearchField" placeholder="Paciente, objetivo..." onkeyup="searchTreatmentPlans()" />
+        </div>
+        <div class="filter-group">
+          <label>Estado:</label>
+          <select id="treatmentPlanStatusFilter" onchange="filterTreatmentPlans()">
+            <option value="">Todos</option>
+            <option value="active">Activo</option>
+            <option value="completed">Completado</option>
+            <option value="paused">Pausado</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="treatmentPlansTable">
+          <thead>
+            <tr>
+              <th>Paciente</th><th>Objetivo</th><th>Duración</th><th>Inicio</th><th>Estado</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="treatmentPlansTableBody"></tbody>
+        </table>
+      </div>
+      <div class="appointments-summary">
+        <div class="summary-card">
+          <h4>Resumen de Planes</h4>
+          <div class="summary-stats">
+            <div class="summary-stat"><span class="stat-label">Total:</span><span class="stat-value" id="totalTreatmentPlansCount">0</span></div>
+            <div class="summary-stat"><span class="stat-label">Activos:</span><span class="stat-value" id="activeTreatmentPlansCount">0</span></div>
+            <div class="summary-stat"><span class="stat-label">Completados:</span><span class="stat-value" id="completedTreatmentPlansCount">0</span></div>
+            <div class="summary-stat"><span class="stat-label">Pausados:</span><span class="stat-value" id="pausedTreatmentPlansCount">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vital Signs View -->
+    <div id="vital-signs-view" class="view">
+      <div class="view-header">
+        <h2>Signos Vitales</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewVitalSignsModal()"><i class="fas fa-plus"></i> Registrar</button>
+          <button class="btn btn-secondary" onclick="refreshVitalSigns()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Paciente:</label>
+          <select id="vitalSignsPatientFilter" onchange="filterVitalSigns()"><option value="">Todos</option></select>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="vitalSignsTable">
+          <thead><tr><th>Paciente</th><th>Fecha</th><th>PA (mmHg)</th><th>FC (lpm)</th><th>Temp</th><th>Peso (kg)</th><th>IMC</th><th>Acciones</th></tr></thead>
+          <tbody id="vitalSignsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recurring Appointments View -->
+    <div id="recurring-appointments-view" class="view">
+      <div class="view-header">
+        <h2>Citas Recurrentes</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewRecurringAppointmentModal()"><i class="fas fa-plus"></i> Nueva Cita Recurrente</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="recurringAppointmentsTable">
+          <thead><tr><th>Paciente</th><th>Tipo</th><th>Patrón</th><th>Inicio</th><th>Fin</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="recurringAppointmentsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Waiting List View -->
+    <div id="waiting-list-view" class="view">
+      <div class="view-header">
+        <h2>Lista de Espera</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewWaitingListModal()"><i class="fas fa-plus"></i> Agregar</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="enhanced-table" id="waitingListTable">
+          <thead><tr><th>Paciente</th><th>Prioridad</th><th>Fecha Preferida</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="waitingListTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI Insights View -->
+    <div id="ai-insights-view" class="view">
+      <div class="view-header">
+        <h2>Insights de IA</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="runAIAnalysis()"><i class="fas fa-brain"></i> Ejecutar Análisis</button>
+        </div>
+      </div>
+      <div id="aiInsightsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;"></div>
+    </div>
+
+    <!-- Automation View -->
+    <div id="automation-view" class="view">
+      <div class="view-header">
+        <h2>Automatización</h2>
+      </div>
+      <div id="automationRulesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;"></div>
+    </div>
+
+    <!-- User Profile View -->
+    <div id="user-profile-view" class="view">
+      <div class="view-header">
+        <h2>Mi Perfil</h2>
+        <div class="view-actions">
+          <button class="btn btn-secondary" onclick="showView('dashboard')"><i class="fas fa-arrow-left"></i> Volver</button>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: 1fr;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1.5rem; width: 100%;">
+            <div class="profile-avatar"><i class="fas fa-user-md"></i></div>
+            <div>
+              <h3 id="userProfileName" style="margin: 0;">-</h3>
+              <p id="userProfileEmail" style="margin: 0.25rem 0; color: var(--text-secondary);">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consultation View -->
+    <div id="consultation-view" class="view">
+      <div class="view-header">
+        <h2>Consulta Médica</h2>
+        <div class="view-actions">
+          <button class="btn btn-secondary" onclick="closeConsultationView()"><i class="fas fa-arrow-left"></i> Volver a Citas</button>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
+        <div class="stat-card" style="flex-direction: row; align-items: center; gap: 1.5rem;">
+          <div class="profile-avatar"><i class="fas fa-user"></i></div>
+          <div style="flex: 1;">
+            <h3 id="consultViewPatientName" style="margin: 0;">Paciente</h3>
+            <p id="consultViewPatientDetails" style="margin: 0.25rem 0 0 0; color: var(--text-secondary);">-</p>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="consultViewAppointmentKey" />
+      <div class="stats-grid" style="grid-template-columns: 1fr; margin-bottom: 1.5rem;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <h4 style="margin: 0 0 1rem 0;"><i class="fas fa-clipboard-list"></i> Tipo de Consulta</h4>
+          <select id="consultViewTemplate" onchange="changeConsultationTemplate(this.value)" style="width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <option value="general">Consulta General</option>
+            <option value="followup">Seguimiento</option>
+            <option value="emergency">Emergencia</option>
+            <option value="pediatric">Pediátrica</option>
+            <option value="geriatric">Geriátrica</option>
+            <option value="cardiology">Cardiología</option>
+            <option value="dermatology">Dermatología</option>
+            <option value="gynecology">Ginecología</option>
+            <option value="orthopedic">Traumatología</option>
+            <option value="psychiatry">Psiquiatría</option>
+          </select>
+        </div>
+      </div>
+      <!-- SOAP Form -->
+      <div class="stats-grid" style="grid-template-columns: 1fr;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <h4><i class="fas fa-comment-medical"></i> Subjetivo</h4>
+          <div class="form-group" style="width:100%"><textarea id="cvSymptoms" rows="3" placeholder="Motivo de consulta, síntomas..."></textarea></div>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: 1fr;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <h4><i class="fas fa-stethoscope"></i> Objetivo</h4>
+          <div class="form-grid">
+            <div class="form-group"><label>PA</label><input type="text" id="cvPA" placeholder="120/80 mmHg" /></div>
+            <div class="form-group"><label>FC</label><input type="text" id="cvFC" placeholder="72 lpm" /></div>
+            <div class="form-group"><label>Temp</label><input type="text" id="cvTemp" placeholder="36.5" /></div>
+            <div class="form-group"><label>Peso</label><input type="text" id="cvPeso" placeholder="70 kg" /></div>
+          </div>
+          <div class="form-group" style="width:100%"><textarea id="cvExamFisico" rows="3" placeholder="Hallazgos del examen físico..."></textarea></div>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: 1fr;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <h4><i class="fas fa-diagnoses"></i> Evaluación</h4>
+          <div class="form-group" style="width:100%"><label>Diagnóstico principal</label><input type="text" id="cvDiagnostico" placeholder="Diagnóstico..." /></div>
+          <div class="form-group" style="width:100%"><label>Diagnósticos secundarios</label><textarea id="cvDiagSecundario" rows="2" placeholder="Otros diagnósticos..."></textarea></div>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: 1fr;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <h4><i class="fas fa-clipboard-list"></i> Plan</h4>
+          <div class="form-group" style="width:100%"><textarea id="cvTratamiento" rows="3" placeholder="Medicamentos, indicaciones..."></textarea></div>
+          <div class="form-group" style="width:100%"><input type="text" id="cvSeguimiento" placeholder="Seguimiento: ej. Control en 2 semanas" /></div>
+        </div>
+      </div>
+      <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" onclick="saveConsultation()"><i class="fas fa-save"></i> Guardar Consulta</button>
+        <button class="btn btn-secondary" onclick="closeConsultationView()">Cancelar</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Schedule Appointment Modal -->
+<div id="scheduleModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>Programar Cita</h3>
+      <span class="close" onclick="closeScheduleModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="scheduleForm" class="enhanced-form">
+        <div class="form-grid">
+          <div class="form-group"><label>Paciente *</label><select id="schedulePatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group"><label>Fecha *</label><input type="date" id="scheduleDate" required /></div>
+          <div class="form-group"><label>Hora *</label><input type="time" id="scheduleTime" required /></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="scheduleType">
+              <option value="consultation">Consulta</option>
+              <option value="followup">Seguimiento</option>
+              <option value="emergency">Emergencia</option>
+              <option value="routine">Control</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Consultorio</label><select id="scheduleOffice"><option value="">Seleccionar</option></select></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Notas</label><textarea id="scheduleNotes" rows="2" placeholder="Notas..."></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeScheduleModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Programar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Patient Modal -->
+<div id="patientModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="patientModalTitle">Nuevo Paciente</h3>
+      <span class="close" onclick="closePatientModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="patientForm" class="enhanced-form">
+        <input type="hidden" id="editPatientId" />
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre *</label><input type="text" id="patientName" required /></div>
+          <div class="form-group"><label>Apellido *</label><input type="text" id="patientLastname" required /></div>
+          <div class="form-group"><label>Cédula/ID *</label><input type="text" id="patientIdInput" required /></div>
+          <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="patientBirthDate" /></div>
+          <div class="form-group"><label>Género</label><select id="patientGender"><option value="">Seleccionar</option><option value="Masculino">Masculino</option><option value="Femenino">Femenino</option></select></div>
+          <div class="form-group"><label>Tipo de Sangre</label><select id="patientBloodType"><option value="">Seleccionar</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+          <div class="form-group"><label>Teléfono *</label><input type="tel" id="patientPhone" required /></div>
+          <div class="form-group"><label>Email</label><input type="email" id="patientEmail" /></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Dirección</label><textarea id="patientAddress" rows="2"></textarea></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Alergias</label><textarea id="patientAllergies" rows="2" placeholder="Medicamentos, alimentos..."></textarea></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Medicamentos Actuales</label><textarea id="patientMedications" rows="2"></textarea></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Antecedentes Médicos</label><textarea id="patientMedicalHistory" rows="2"></textarea></div>
+          <div class="form-group"><label>Contacto Emergencia</label><input type="text" id="emergencyContactName" placeholder="Nombre" /></div>
+          <div class="form-group"><label>Teléfono Emergencia</label><input type="tel" id="emergencyContactPhone" /></div>
+          <div class="form-group"><label>Relación</label><input type="text" id="emergencyContactRelation" /></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closePatientModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Paciente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Prescription Modal -->
+<div id="prescriptionModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 id="prescriptionModalTitle">Nueva Receta</h3>
+      <span class="close" onclick="closePrescriptionModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="prescriptionForm" class="enhanced-form">
+        <input type="hidden" id="prescriptionEditId" />
+        <div class="form-grid">
+          <div class="form-group"><label>Paciente *</label><select id="prescriptionPatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group"><label>Medicamento *</label><input type="text" id="prescriptionMedication" required /></div>
+          <div class="form-group"><label>Dosis *</label><input type="text" id="prescriptionDosage" required placeholder="Ej: 500mg" /></div>
+          <div class="form-group"><label>Frecuencia *</label>
+            <select id="prescriptionFrequency" required>
+              <option value="">Seleccionar</option>
+              <option value="once-daily">Una vez al día</option>
+              <option value="twice-daily">Dos veces al día</option>
+              <option value="three-times-daily">Tres veces al día</option>
+              <option value="every-8-hours">Cada 8 horas</option>
+              <option value="as-needed">Según sea necesario</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Fecha Inicio *</label><input type="date" id="prescriptionStartDate" required /></div>
+          <div class="form-group"><label>Fecha Fin *</label><input type="date" id="prescriptionEndDate" required /></div>
+          <div class="form-group"><label>Estado</label>
+            <select id="prescriptionStatus"><option value="active">Activa</option><option value="completed">Completada</option><option value="cancelled">Cancelada</option></select>
+          </div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Indicaciones</label><textarea id="prescriptionNotes" rows="2" placeholder="Indicaciones especiales..."></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closePrescriptionModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Receta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Treatment Plan Modal -->
+<div id="treatmentPlanModal" class="modal">
+  <div class="modal-content" style="max-width: 700px;">
+    <div class="modal-header">
+      <h3 id="treatmentPlanModalTitle">Nuevo Plan de Tratamiento</h3>
+      <span class="close" onclick="closeTreatmentPlanModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="treatmentPlanForm" class="enhanced-form">
+        <input type="hidden" id="treatmentPlanEditId" />
+        <div class="form-grid">
+          <div class="form-group"><label>Paciente *</label><select id="treatmentPlanPatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group"><label>Objetivo *</label><input type="text" id="treatmentPlanObjective" required /></div>
+          <div class="form-group"><label>Duración (días)</label><input type="number" id="treatmentPlanDuration" placeholder="30" /></div>
+          <div class="form-group"><label>Fecha Inicio *</label><input type="date" id="treatmentPlanStartDate" required /></div>
+          <div class="form-group"><label>Estado</label><select id="treatmentPlanStatus"><option value="active">Activo</option><option value="completed">Completado</option><option value="paused">Pausado</option></select></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Dieta</label><textarea id="treatmentPlanDiet" rows="2" placeholder="Indicaciones de dieta..."></textarea></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Actividad Física</label><textarea id="treatmentPlanExercise" rows="2" placeholder="Indicaciones de ejercicio..."></textarea></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Restricciones</label><textarea id="treatmentPlanRestrictions" rows="2" placeholder="Restricciones..."></textarea></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Seguimiento</label><input type="text" id="treatmentPlanFollowUp" placeholder="Próxima cita en..." /></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeTreatmentPlanModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Vital Signs Modal -->
+<div id="vitalSignsModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>Registrar Signos Vitales</h3>
+      <span class="close" onclick="closeVitalSignsModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="vitalSignsForm" class="enhanced-form">
+        <div class="form-grid">
+          <div class="form-group"><label>Paciente *</label><select id="vitalSignsPatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group"><label>Fecha *</label><input type="date" id="vitalSignsDate" required /></div>
+          <div class="form-group"><label>PA Sistólica</label><input type="number" id="vitalSignsSystolic" placeholder="120" /></div>
+          <div class="form-group"><label>PA Diastólica</label><input type="number" id="vitalSignsDiastolic" placeholder="80" /></div>
+          <div class="form-group"><label>FC (lpm)</label><input type="number" id="vitalSignsHeartRate" placeholder="72" /></div>
+          <div class="form-group"><label>Temperatura</label><input type="number" id="vitalSignsTemperature" step="0.1" placeholder="36.5" /></div>
+          <div class="form-group"><label>Peso (kg)</label><input type="number" id="vitalSignsWeight" step="0.1" placeholder="70" /></div>
+          <div class="form-group"><label>Altura (cm)</label><input type="number" id="vitalSignsHeight" placeholder="170" /></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeVitalSignsModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Recurring Appointment Modal -->
+<div id="recurringAppointmentModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>Nueva Cita Recurrente</h3>
+      <span class="close" onclick="closeRecurringAppointmentModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="recurringAppointmentForm" class="enhanced-form">
+        <div class="form-grid">
+          <div class="form-group"><label>Paciente *</label><select id="recurringPatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group"><label>Tipo *</label><select id="recurringTemplate" required><option value="general">Consulta General</option><option value="followup">Seguimiento</option><option value="control">Control</option></select></div>
+          <div class="form-group"><label>Fecha Inicio *</label><input type="date" id="recurringStartDate" required /></div>
+          <div class="form-group"><label>Fecha Fin *</label><input type="date" id="recurringEndDate" required /></div>
+          <div class="form-group"><label>Hora *</label><input type="time" id="recurringTime" required /></div>
+          <div class="form-group"><label>Patrón *</label><select id="recurringPattern" onchange="document.getElementById('recurringDaysContainer').style.display=this.value==='weekly'?'block':'none'"><option value="daily">Diaria</option><option value="weekly">Semanal</option><option value="monthly">Mensual</option></select></div>
+        </div>
+        <div id="recurringDaysContainer" style="display:none; margin: 1rem 0;">
+          <label>Días:</label>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+            <label><input type="checkbox" value="1" class="recurringDay"> Lun</label>
+            <label><input type="checkbox" value="2" class="recurringDay"> Mar</label>
+            <label><input type="checkbox" value="3" class="recurringDay"> Mié</label>
+            <label><input type="checkbox" value="4" class="recurringDay"> Jue</label>
+            <label><input type="checkbox" value="5" class="recurringDay"> Vie</label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeRecurringAppointmentModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Waiting List Modal -->
+<div id="waitingListModal" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3>Agregar a Lista de Espera</h3>
+      <span class="close" onclick="closeWaitingListModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="waitingListForm" class="enhanced-form">
+        <div class="form-grid">
+          <div class="form-group"><label>Paciente *</label><select id="waitingListPatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group"><label>Tipo *</label><select id="waitingListType" required><option value="general">Consulta General</option><option value="followup">Seguimiento</option><option value="specialist">Especialista</option></select></div>
+          <div class="form-group"><label>Fecha Preferida</label><input type="date" id="waitingListPreferredDate" /></div>
+          <div class="form-group"><label>Prioridad</label><select id="waitingListPriority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeWaitingListModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Agregar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Office Modal -->
+<div id="officeModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 id="officeModalTitle">Nuevo Consultorio</h3>
+      <span class="close" onclick="closeOfficeModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="officeForm" class="enhanced-form">
+        <input type="hidden" id="officeEditId" />
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre *</label><input type="text" id="officeName" required placeholder="Consultorio Centro Médico" /></div>
+          <div class="form-group"><label>Teléfono</label><input type="tel" id="officePhone" /></div>
+          <div class="form-group" style="grid-column: 1 / -1"><label>Dirección *</label><input type="text" id="officeAddress" required /></div>
+          <div class="form-group"><label>Hora Inicio</label><input type="time" id="officeStartTime" value="08:00" /></div>
+          <div class="form-group"><label>Hora Fin</label><input type="time" id="officeEndTime" value="17:00" /></div>
+        </div>
+        <div style="margin: 1rem 0;">
+          <label>Días de atención:</label>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
+            <label><input type="checkbox" value="lunes" class="officeDay" checked> Lun</label>
+            <label><input type="checkbox" value="martes" class="officeDay" checked> Mar</label>
+            <label><input type="checkbox" value="miercoles" class="officeDay" checked> Mié</label>
+            <label><input type="checkbox" value="jueves" class="officeDay" checked> Jue</label>
+            <label><input type="checkbox" value="viernes" class="officeDay" checked> Vie</label>
+            <label><input type="checkbox" value="sabado" class="officeDay"> Sáb</label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeOfficeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts - Módulos -->
+<script src="js/supabase-config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/patients.js"></script>
+<script src="js/appointments.js"></script>
+<script src="js/prescriptions.js"></script>
+<script src="js/treatment-plans.js"></script>
+<script src="js/vital-signs.js"></script>
+<script src="js/recurring.js"></script>
+<script src="js/waiting-list.js"></script>
+<script src="js/ai-automation.js"></script>
+<script src="js/offices.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+// Archivo principal cargado - toda la lógica está en los módulos js/
+console.log("Sistema Médico Avanzado - Cargado correctamente");
+</script>
+</body>
+</html>
