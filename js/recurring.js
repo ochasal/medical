@@ -18,10 +18,11 @@ async function refreshRecurringAppointments() {
   tbody.innerHTML = '';
   (recurring || []).forEach(function(r) {
     var patient = r.patients || {};
-    var patternText = r.pattern === 'daily' ? 'Diaria' : r.pattern === 'weekly' ? 'Semanal' : 'Mensual';
+    var patternLabels = { daily: 'Diaria', weekly: 'Semanal', monthly: 'Mensual' };
+    var templateLabels = { general: 'Consulta General', followup: 'Seguimiento', control: 'Control' };
     var row = '<tr><td>' + (patient.name || '') + ' ' + (patient.lastname || '') + '</td>' +
-      '<td>' + (r.template_id || '') + '</td><td>' + patternText + '</td>' +
-      '<td>' + (r.start_date || '') + '</td><td>' + (r.end_date || '') + '</td>' +
+      '<td>' + (templateLabels[r.template_id] || r.template_id) + '</td><td>' + (patternLabels[r.pattern] || r.pattern) + '</td>' +
+      '<td>' + formatDate(r.start_date) + '</td><td>' + formatDate(r.end_date) + '</td>' +
       '<td><span class="badge badge-' + (r.is_active ? 'success' : 'secondary') + '">' + (r.is_active ? 'Activa' : 'Inactiva') + '</span></td>' +
       '<td><button class="btn btn-sm btn-warning" onclick="toggleRecurring(\'' + r.id + '\',' + r.is_active + ')"><i class="fas fa-' + (r.is_active ? 'pause' : 'play') + '"></i></button> ' +
       '<button class="btn btn-sm btn-danger" onclick="deleteRecurring(\'' + r.id + '\')"><i class="fas fa-trash"></i></button></td></tr>';

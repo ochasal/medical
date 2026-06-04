@@ -18,11 +18,14 @@ async function refreshWaitingList() {
   tbody.innerHTML = '';
   (list || []).forEach(function(entry) {
     var patient = entry.patients || {};
+    var priorityLabels = { urgent: 'Urgente', high: 'Alta', normal: 'Normal', low: 'Baja' };
+    var statusLabels = { waiting: 'En espera', scheduled: 'Programada', cancelled: 'Cancelada' };
+    var typeLabels = { general: 'Consulta General', followup: 'Seguimiento', specialist: 'Especialista', control: 'Control' };
     var priorityClass = entry.priority === 'urgent' ? 'danger' : entry.priority === 'high' ? 'warning' : 'info';
     var row = '<tr><td>' + (patient.name || '') + ' ' + (patient.lastname || '') + '</td>' +
-      '<td><span class="badge badge-' + priorityClass + '">' + (entry.priority || 'normal') + '</span></td>' +
-      '<td>' + (entry.preferred_date || 'Flexible') + '</td><td>' + (entry.type || '') + '</td>' +
-      '<td><span class="badge badge-info">' + (entry.status || 'waiting') + '</span></td>' +
+      '<td><span class="badge badge-' + priorityClass + '">' + (priorityLabels[entry.priority] || entry.priority) + '</span></td>' +
+      '<td>' + (entry.preferred_date ? formatDate(entry.preferred_date) : 'Flexible') + '</td><td>' + (typeLabels[entry.type] || entry.type) + '</td>' +
+      '<td><span class="badge badge-info">' + (statusLabels[entry.status] || entry.status) + '</span></td>' +
       '<td><button class="btn btn-sm btn-danger" onclick="removeFromWaitingList(\'' + entry.id + '\')"><i class="fas fa-trash"></i></button></td></tr>';
     tbody.innerHTML += row;
   });

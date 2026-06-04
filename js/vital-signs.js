@@ -22,7 +22,7 @@ async function refreshVitalSigns() {
     var bmi = r.weight && r.height ? (r.weight / Math.pow(r.height / 100, 2)).toFixed(1) : 'N/A';
     var pa = r.systolic && r.diastolic ? r.systolic + '/' + r.diastolic : 'N/A';
     var row = '<tr><td>' + (patient.name || '') + ' ' + (patient.lastname || '') + '</td>' +
-      '<td>' + (r.date || '') + '</td><td>' + pa + '</td><td>' + (r.heart_rate || 'N/A') + '</td>' +
+      '<td>' + formatDate(r.date) + '</td><td>' + pa + '</td><td>' + (r.heart_rate || 'N/A') + '</td>' +
       '<td>' + (r.temperature || 'N/A') + '</td><td>' + (r.weight || 'N/A') + '</td><td>' + bmi + '</td>' +
       '<td><button class="btn btn-sm btn-info" onclick="viewVitalDetails(\'' + r.id + '\')"><i class="fas fa-eye"></i></button></td></tr>';
     tbody.innerHTML += row;
@@ -34,7 +34,19 @@ async function viewVitalDetails(id) {
   if (!r) return;
   var patient = r.patients || {};
   var bmi = r.weight && r.height ? (r.weight / Math.pow(r.height / 100, 2)).toFixed(1) : 'N/A';
-  alert(patient.name + ' ' + patient.lastname + '\n\nFecha: ' + r.date + '\nPA: ' + (r.systolic || 'N/A') + '/' + (r.diastolic || 'N/A') + ' mmHg\nFC: ' + (r.heart_rate || 'N/A') + ' lpm\nTemp: ' + (r.temperature || 'N/A') + '\nPeso: ' + (r.weight || 'N/A') + ' kg\nAltura: ' + (r.height || 'N/A') + ' cm\nIMC: ' + bmi);
+  var html = '<div style="background:var(--bg-secondary);padding:1rem;border-radius:8px;margin-bottom:1rem;">';
+  html += '<p><strong>Paciente:</strong> ' + patient.name + ' ' + patient.lastname + '</p>';
+  html += '<p><strong>Fecha:</strong> ' + formatDate(r.date) + '</p>';
+  html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">';
+  html += '<p><strong>PA:</strong> ' + (r.systolic || 'N/A') + '/' + (r.diastolic || 'N/A') + ' mmHg</p>';
+  html += '<p><strong>FC:</strong> ' + (r.heart_rate || 'N/A') + ' lpm</p>';
+  html += '<p><strong>Temperatura:</strong> ' + (r.temperature || 'N/A') + ' °C</p>';
+  html += '<p><strong>Peso:</strong> ' + (r.weight || 'N/A') + ' kg</p>';
+  html += '<p><strong>Altura:</strong> ' + (r.height || 'N/A') + ' cm</p>';
+  html += '<p><strong>IMC:</strong> ' + bmi + '</p>';
+  html += '</div>';
+  showDetailModal('Signos Vitales', html);
 }
 
 function filterVitalSigns() { refreshVitalSigns(); }

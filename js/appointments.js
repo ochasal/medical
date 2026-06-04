@@ -20,7 +20,7 @@ async function loadAppointments() {
     var statusClass = { scheduled: 'info', completed: 'success', cancelled: 'danger', 'no-show': 'warning' };
     var row = '<tr>' +
       '<td>' + patientName + '</td>' +
-      '<td>' + (apt.date || '') + '</td>' +
+      '<td>' + formatDate(apt.date) + '</td>' +
       '<td>' + (apt.time || '') + '</td>' +
       '<td>' + (apt.type || '') + '</td>' +
       '<td><span class="badge badge-' + (statusClass[apt.status] || 'info') + '">' + (statusLabels[apt.status] || apt.status) + '</span></td>' +

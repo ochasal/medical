@@ -22,10 +22,31 @@ async function loadOffices() {
       '<h4 style="margin:0 0 0.5rem 0;">' + o.name + '</h4>' +
       '<p style="margin:0;color:var(--text-secondary);">' + (o.address || '') + '</p>' +
       '<p style="margin:0.25rem 0;color:var(--text-secondary);">Tel: ' + (o.phone || 'N/A') + '</p>' +
-      '<p style="margin:0;color:var(--text-secondary);">Horario: ' + (o.start_time || '') + ' - ' + (o.end_time || '') + '</p>' +
-      '<div style="margin-top:0.5rem;"><button class="btn btn-sm btn-danger" onclick="deleteOffice(\'' + o.id + '\')"><i class="fas fa-trash"></i> Eliminar</button></div>' +
+      '<p style="margin:0;color:var(--text-secondary);">Horario: ' + (o.start_time || '').substring(0,5) + ' - ' + (o.end_time || '').substring(0,5) + '</p>' +
+      '<div style="margin-top:0.75rem;display:flex;gap:0.5rem;">' +
+        '<button onclick="editOffice(\'' + o.id + '\')" style="background:var(--info-color);color:white;border:none;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-edit"></i> Editar</button>' +
+        '<button onclick="deleteOffice(\'' + o.id + '\')" style="background:var(--danger-color);color:white;border:none;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-trash"></i> Eliminar</button>' +
+      '</div>' +
       '</div>';
   }).join('');
+}
+
+async function editOffice(id) {
+  var { data: office } = await db.from('offices').select('*').eq('id', id).single();
+  if (!office) return;
+  document.getElementById('officeForm').reset();
+  document.getElementById('officeEditId').value = id;
+  document.getElementById('officeModalTitle').textContent = 'Editar Consultorio';
+  document.getElementById('officeName').value = office.name || '';
+  document.getElementById('officePhone').value = office.phone || '';
+  document.getElementById('officeAddress').value = office.address || '';
+  document.getElementById('officeStartTime').value = office.start_time || '08:00';
+  document.getElementById('officeEndTime').value = office.end_time || '17:00';
+  // Set days checkboxes
+  document.querySelectorAll('.officeDay').forEach(function(cb) {
+    cb.checked = (office.days || []).includes(cb.value);
+  });
+  document.getElementById('officeModal').style.display = 'block';
 }
 
 async function deleteOffice(id) {

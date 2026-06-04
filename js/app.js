@@ -46,6 +46,9 @@ function showView(viewName) {
   if (viewName === 'patients') loadAllPatients();
   else if (viewName === 'appointments') loadAppointments();
   else if (viewName === 'prescriptions') refreshPrescriptions();
+  else if (viewName === 'orders') refreshOrders();
+  else if (viewName === 'rest') refreshRest();
+  else if (viewName === 'referrals') refreshReferrals();
   else if (viewName === 'treatment-plans') refreshTreatmentPlans();
   else if (viewName === 'vital-signs') refreshVitalSigns();
   else if (viewName === 'recurring-appointments') refreshRecurringAppointments();
@@ -53,6 +56,7 @@ function showView(viewName) {
   else if (viewName === 'ai-insights') refreshAIInsights();
   else if (viewName === 'automation') refreshAutomationStatus();
   else if (viewName === 'offices') loadOffices();
+  else if (viewName === 'user-profile') loadUserProfile();
 }
 
 function toggleSidebar() {

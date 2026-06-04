@@ -142,6 +142,43 @@ CREATE TABLE IF NOT EXISTS offices (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Tabla de órdenes médicas
+CREATE TABLE IF NOT EXISTS orders (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  description TEXT NOT NULL,
+  date DATE,
+  notes TEXT,
+  status TEXT DEFAULT 'pendiente',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Tabla de reposo médico
+CREATE TABLE IF NOT EXISTS rest_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  days INTEGER NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  diagnosis TEXT NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Tabla de referencias médicas
+CREATE TABLE IF NOT EXISTS referrals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  specialty TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  date DATE,
+  priority TEXT DEFAULT 'normal',
+  notes TEXT,
+  status TEXT DEFAULT 'pendiente',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
