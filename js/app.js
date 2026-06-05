@@ -81,6 +81,7 @@ function showView(viewName) {
   var link = document.querySelector('[data-view="' + viewName + '"]');
   if (link) link.classList.add('active');
   if (viewName === 'patients') loadAllPatients();
+  else if (viewName === 'dashboard') refreshDashboard();
   else if (viewName === 'appointments') loadAppointments();
   else if (viewName === 'prescriptions') refreshPrescriptions();
   else if (viewName === 'orders') refreshOrders();
@@ -136,27 +137,9 @@ async function refreshDashboard() {
   document.getElementById('activePrescriptions').textContent = activeRx;
 }
 
-// ===== BACKUP =====
+// ===== BACKUP (Legacy - data in Supabase) =====
 async function exportAllData() {
-  showToast('info', 'Backup', 'Descargando datos...');
-  var backup = {};
-  var tables = ['patients', 'appointments', 'consultations', 'prescriptions', 'treatment_plans', 'vital_signs', 'recurring_appointments', 'waiting_list', 'offices', 'orders', 'rest_records', 'referrals'];
-  for (var i = 0; i < tables.length; i++) {
-    var { data } = await db.from(tables[i]).select('*');
-    backup[tables[i]] = data || [];
-  }
-  backup.timestamp = new Date().toISOString();
-  var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'backup-sistema-medico-' + new Date().toISOString().split('T')[0] + '.json';
-  a.click();
-  showToast('success', 'Backup', 'Descargado correctamente');
-}
-
-function importBackup(file) {
-  if (!file) return;
-  showToast('info', 'Info', 'La importación desde backup se implementará próximamente');
+  showToast('info', 'Info', 'Los datos están seguros en Supabase. No es necesario hacer backup manual.');
 }
 
 // ===== INIT =====

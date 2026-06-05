@@ -36,10 +36,12 @@ async function toggleRecurring(id, currentState) {
 }
 
 async function deleteRecurring(id) {
-  if (confirm('¿Eliminar esta cita recurrente?')) {
-    await db.from('recurring_appointments').delete().eq('id', id);
+  showConfirm('Eliminar', '¿Eliminar esta cita recurrente?', async function() {
+    var { error } = await db.from('recurring_appointments').delete().eq('id', id);
+    if (error) { showToast('error', 'Error', error.message); return; }
     refreshRecurringAppointments();
-  }
+    showToast('success', 'Eliminado', 'Cita recurrente eliminada');
+  });
 }
 
 // Form submission

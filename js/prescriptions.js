@@ -170,8 +170,19 @@ function searchPrescriptions() {
   var query = document.getElementById('prescriptionSearchField').value.toLowerCase();
   document.querySelectorAll('#prescriptionsTableBody tr').forEach(function(row) { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
 }
-function filterPrescriptions() { refreshPrescriptions(); }
-function exportPrescriptionsPDF() { showToast('info', 'Exportando', 'Generando PDF...'); }
+function filterPrescriptions() {
+  var status = document.getElementById('prescriptionStatusFilter') ? document.getElementById('prescriptionStatusFilter').value : '';
+  var rows = document.querySelectorAll('#prescriptionsTableBody tr');
+  rows.forEach(function(row) {
+    if (!status) { row.style.display = ''; return; }
+    row.style.display = row.textContent.toLowerCase().includes(status.toLowerCase()) ? '' : 'none';
+  });
+}
+function exportPrescriptionsPDF() {
+  var rows = document.querySelectorAll('#prescriptionsTableBody tr');
+  if (rows.length === 0) { showToast('info', 'Info', 'No hay récipes para exportar'); return; }
+  showToast('info', 'Info', 'Usa el botón PDF en cada récipe individual');
+}
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {

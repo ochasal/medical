@@ -83,7 +83,17 @@ function searchAllPatients() {
   });
 }
 
-function filterPatients() { loadAllPatients(); }
+function filterPatients() {
+  var status = document.getElementById('patientStatusFilter').value;
+  var rows = document.querySelectorAll('#patientsTableBody tr');
+  rows.forEach(function(row) {
+    if (!status) { row.style.display = ''; return; }
+    var badge = row.querySelector('.badge');
+    if (!badge) { row.style.display = ''; return; }
+    var rowStatus = badge.textContent.toLowerCase();
+    row.style.display = (status === 'active' && rowStatus === 'activo') || (status === 'inactive' && rowStatus === 'inactivo') ? '' : 'none';
+  });
+}
 function refreshPatients() { loadAllPatients(); }
 
 // ===== PATIENT DETAIL VIEW =====
@@ -342,40 +352,28 @@ async function searchMedicalRecords() {
 
 async function viewPatientMedicalRecords(patientId, patientName) {
   window.currentPatientId = patientId;
-  document.getElementById('medicalRecordsContent').innerHTML = '<div style="padding: 1.5rem;"><h3>' + patientName + '</h3><p style="color: var(--text-secondary);">Cargando...Historial médico...</p></div>';
   
-  // Mostrar sección de documentos
-  document.getElementById('patientDocumentsSection').style.display = 'block';
-  
-  // Actualizar botón para agregar documentos
-  document.getElementById('addDocumentBtn').onclick = function() {
-    openPatientDocumentModal(patientId);
-  };
-
-  // Cargar los documentos del paciente
-  refreshPatientDocuments(patientId);
-
   // Cargar historial de consultas
   var { data: consultations } = await db.from('consultations').select('*').eq('patient_id', patientId).order('created_at', { ascending: false });
   
-  var html = '<div style="margin-top: 1.5rem;"><h4><i class="fas fa-history"></i> Consultas Registradas</h4>';
+  var html = '<div style="padding: 1.5rem;"><h3>' + patientName + '</h3>';
+  html += '<h4 style="margin-top: 1.5rem;"><i class="fas fa-history"></i> Consultas Registradas</h4>';
+  
   if (!consultations || consultations.length === 0) {
     html += '<p style="color: var(--text-secondary); padding: 1rem;">Sin consultas registradas</p>';
   } else {
     html += '<div style="display: grid; gap: 1rem;">';
     consultations.forEach(function(cons) {
       var date = new Date(cons.created_at).toLocaleDateString('es-ES');
-      html += '<div class="stat-card" style="padding: 1rem; border-radius: 8px; background: #fafafa;">' +
+      html += '<div class="stat-card" style="padding: 1rem; border-radius: 8px; background: #fafafa; cursor: pointer;" onclick="viewConsultationDetail(\'' + cons.id + '\')">' +
         '<p style="margin: 0 0 0.5rem 0; font-weight: 500;"><i class="fas fa-stethoscope"></i> ' + date + '</p>' +
         '<p style="margin: 0 0 0.25rem 0; font-size: 0.9rem; color: #666;"><strong>Diagnóstico:</strong> ' + (cons.diagnosis || 'N/A') + '</p>' +
-        (cons.symptoms ? '<p style="margin: 0; font-size: 0.9rem; color: #666;"><strong>Síntomas:</strong> ' + cons.symptoms + '</p>' : '') +
-        '<div id="consultation-attachments-' + cons.id + '" style="margin-top: 0.5rem;"></div>' +
+        (cons.symptoms ? '<p style="margin: 0; font-size: 0.9rem; color: #666;"><strong>Motivo:</strong> ' + cons.symptoms + '</p>' : '') +
         '</div>';
-      refreshConsultationAttachments(cons.id);
     });
     html += '</div>';
   }
   html += '</div>';
   
-  document.getElementById('medicalRecordsContent').innerHTML += html;
+  document.getElementById('medicalRecordsContent').innerHTML = html;
 }

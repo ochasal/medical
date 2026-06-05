@@ -32,8 +32,13 @@ async function refreshWaitingList() {
 }
 
 async function removeFromWaitingList(id) {
-  await db.from('waiting_list').delete().eq('id', id);
-  refreshWaitingList();
+  showConfirm('Eliminar', '¿Eliminar de la lista de espera?', async function() {
+    var { error } = await db.from('waiting_list').delete().eq('id', id);
+    if (error) { showToast('error', 'Error', error.message); return; }
+    refreshWaitingList();
+    showToast('success', 'Eliminado', 'Removido de la lista de espera');
+  });
+}
 }
 
 // Form submission

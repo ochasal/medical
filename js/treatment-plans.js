@@ -97,8 +97,17 @@ function searchTreatmentPlans() {
   var rows = document.querySelectorAll('#treatmentPlansTableBody tr');
   rows.forEach(function(row) { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
 }
-function filterTreatmentPlans() { refreshTreatmentPlans(); }
-function exportTreatmentPlans() { showToast('info', 'Exportando', 'Generando PDF...'); }
+function filterTreatmentPlans() {
+  var status = document.getElementById('treatmentPlanStatusFilter') ? document.getElementById('treatmentPlanStatusFilter').value : '';
+  var rows = document.querySelectorAll('#treatmentPlansTableBody tr');
+  rows.forEach(function(row) {
+    if (!status) { row.style.display = ''; return; }
+    row.style.display = row.textContent.toLowerCase().includes(status.toLowerCase()) ? '' : 'none';
+  });
+}
+function exportTreatmentPlans() {
+  showToast('info', 'Info', 'Usa el botón PDF en cada plan individual');
+}
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {

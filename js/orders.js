@@ -79,7 +79,14 @@ function searchOrders() {
   var query = document.getElementById('orderSearchField').value.toLowerCase();
   document.querySelectorAll('#ordersTableBody tr').forEach(function(row) { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
 }
-function filterOrders() { refreshOrders(); }
+function filterOrders() {
+  var status = document.getElementById('orderStatusFilter') ? document.getElementById('orderStatusFilter').value : '';
+  var rows = document.querySelectorAll('#ordersTableBody tr');
+  rows.forEach(function(row) {
+    if (!status) { row.style.display = ''; return; }
+    row.style.display = row.textContent.toLowerCase().includes(status.toLowerCase()) ? '' : 'none';
+  });
+}
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {

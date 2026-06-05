@@ -188,14 +188,6 @@
           <label>Buscar:</label>
           <input type="text" id="patientSearchField" placeholder="Nombre, teléfono, ID..." onkeyup="searchAllPatients()" />
         </div>
-        <div class="filter-group">
-          <label>Estado:</label>
-          <select id="patientStatusFilter" onchange="filterPatients()">
-            <option value="">Todos</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
-          </select>
-        </div>
       </div>
       <div class="table-container">
         <table class="enhanced-table" id="patientsTable">

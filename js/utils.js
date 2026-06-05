@@ -77,8 +77,7 @@ function populatePatientSelect(selectId) {
   });
 }
 
-// Placeholder functions
-function searchMedicalRecords() { /* placeholder */ }
+// Placeholder functions removed - real implementations in their respective modules
 
 // Detail Modal
 function showDetailModal(title, htmlContent) {

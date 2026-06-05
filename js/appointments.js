@@ -129,7 +129,14 @@ async function saveConsultation() {
 
 function changeConsultationTemplate(template) { /* Template logic */ }
 function refreshAppointments() { loadAppointments(); }
-function filterAppointments() { loadAppointments(); }
+function filterAppointments() {
+  var status = document.getElementById('appointmentStatusFilter') ? document.getElementById('appointmentStatusFilter').value : '';
+  var rows = document.querySelectorAll('#appointmentsTableBody tr');
+  rows.forEach(function(row) {
+    if (!status) { row.style.display = ''; return; }
+    row.style.display = row.textContent.toLowerCase().includes(status.toLowerCase()) ? '' : 'none';
+  });
+}
 function searchAppointments() {
   var query = document.getElementById('appointmentSearchField').value.toLowerCase();
   var rows = document.querySelectorAll('#appointmentsTableBody tr');

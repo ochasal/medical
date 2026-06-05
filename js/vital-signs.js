@@ -49,7 +49,13 @@ async function viewVitalDetails(id) {
   showDetailModal('Signos Vitales', html);
 }
 
-function filterVitalSigns() { refreshVitalSigns(); }
+function filterVitalSigns() {
+  var rows = document.querySelectorAll('#vitalSignsTableBody tr');
+  var query = document.getElementById('vitalSignsSearch') ? document.getElementById('vitalSignsSearch').value.toLowerCase() : '';
+  rows.forEach(function(row) {
+    row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+  });
+}
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {
