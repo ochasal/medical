@@ -18,11 +18,12 @@ async function loadAppointments() {
     if (apt.date === today) todayCount++;
     var statusLabels = { scheduled: 'Programada', completed: 'Completada', cancelled: 'Cancelada', 'no-show': 'No asistió' };
     var statusClass = { scheduled: 'info', completed: 'success', cancelled: 'danger', 'no-show': 'warning' };
+    var typeLabels = { consultation: 'Consulta', follow_up: 'Seguimiento', followup: 'Seguimiento', emergency: 'Emergencia', checkup: 'Chequeo', procedure: 'Procedimiento', routine: 'Control' };
     var row = '<tr>' +
       '<td>' + patientName + '</td>' +
       '<td>' + formatDate(apt.date) + '</td>' +
       '<td>' + (apt.time || '') + '</td>' +
-      '<td>' + (apt.type || '') + '</td>' +
+      '<td>' + (typeLabels[apt.type] || apt.type || 'Consulta') + '</td>' +
       '<td><span class="badge badge-' + (statusClass[apt.status] || 'info') + '">' + (statusLabels[apt.status] || apt.status) + '</span></td>' +
       '<td>' + (apt.office || '-') + '</td>' +
       '<td><div class="action-buttons">' +

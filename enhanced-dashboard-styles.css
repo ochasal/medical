@@ -5484,17 +5484,45 @@ html {
 /* ===== TEMAS DE COLOR ===== */
 
 [data-theme="blue"] {
-  --bg-gradient: linear-gradient(135deg, #a8d4f5 0%, #7bb8e0 50%, #c5e3f6 100%);
+  --bg-gradient: linear-gradient(135deg, #e8f4fc 0%, #d4eaf7 50%, #f0f8ff 100%);
   --accent-color: #2196f3;
   --accent-hover: #1976d2;
   --accent-gradient: linear-gradient(135deg, #2196f3, #1565c0);
 }
 
 [data-theme="green"] {
-  --bg-gradient: linear-gradient(135deg, #a8dba8 0%, #7bc47b 50%, #c8e6c8 100%);
+  --bg-gradient: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #f1f8e9 100%);
   --accent-color: #4caf50;
   --accent-hover: #388e3c;
   --accent-gradient: linear-gradient(135deg, #4caf50, #2e7d32);
+}
+
+[data-theme="rose"] {
+  --bg-gradient: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #fff0f3 100%);
+  --accent-color: #e91e63;
+  --accent-hover: #c2185b;
+  --accent-gradient: linear-gradient(135deg, #e91e63, #c2185b);
+}
+
+[data-theme="orange"] {
+  --bg-gradient: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 50%, #fff8f0 100%);
+  --accent-color: #f57c00;
+  --accent-hover: #e65100;
+  --accent-gradient: linear-gradient(135deg, #f57c00, #e65100);
+}
+
+[data-theme="teal"] {
+  --bg-gradient: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 50%, #f0faf9 100%);
+  --accent-color: #009688;
+  --accent-hover: #00796b;
+  --accent-gradient: linear-gradient(135deg, #009688, #00796b);
+}
+
+[data-theme="red"] {
+  --bg-gradient: linear-gradient(135deg, #ffebee 0%, #ffcdd2 50%, #fff5f5 100%);
+  --accent-color: #e53935;
+  --accent-hover: #c62828;
+  --accent-gradient: linear-gradient(135deg, #e53935, #c62828);
 }
 
 [data-theme="dark"] {
