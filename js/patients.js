@@ -105,7 +105,8 @@ async function viewPatientDetail(patientId) {
   var { data: patient } = await db.from('patients').select('*').eq('id', patientId).single();
   if (!patient) return;
   
-  // Hide list, show detail
+  // Hide list section, show detail
+  document.getElementById('patientsListSection').style.display = 'none';
   document.getElementById('patientsTableBody').parentElement.parentElement.style.display = 'none';
   document.getElementById('patientDetailView').style.display = 'block';
   
@@ -190,6 +191,7 @@ async function viewPatientDetail(patientId) {
 }
 
 function backToPatientsList() {
+  document.getElementById('patientsListSection').style.display = '';
   document.getElementById('patientsTableBody').parentElement.parentElement.style.display = '';
   document.getElementById('patientDetailView').style.display = 'none';
   currentDetailPatientId = null;

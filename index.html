@@ -177,17 +177,19 @@
 
     <!-- Patients View -->
     <div id="patients-view" class="view">
-      <div class="view-header">
-        <h2>Gestión de Pacientes</h2>
-        <div class="view-actions">
-          <button class="btn btn-primary" onclick="openNewPatientModal()"><i class="fas fa-plus"></i> Nuevo Paciente</button>
-          <button class="btn btn-secondary" onclick="refreshPatients()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+      <div id="patientsListSection">
+        <div class="view-header">
+          <h2>Gestión de Pacientes</h2>
+          <div class="view-actions">
+            <button class="btn btn-primary" onclick="openNewPatientModal()"><i class="fas fa-plus"></i> Nuevo Paciente</button>
+            <button class="btn btn-secondary" onclick="refreshPatients()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+          </div>
         </div>
-      </div>
-      <div class="filters-section">
-        <div class="filter-group">
-          <label>Buscar:</label>
-          <input type="text" id="patientSearchField" placeholder="Nombre, teléfono, ID..." onkeyup="searchAllPatients()" />
+        <div class="filters-section">
+          <div class="filter-group">
+            <label>Buscar:</label>
+            <input type="text" id="patientSearchField" placeholder="Nombre, teléfono, ID..." onkeyup="searchAllPatients()" />
+          </div>
         </div>
       </div>
       <div class="table-container">
