@@ -39,7 +39,6 @@ async function removeFromWaitingList(id) {
     showToast('success', 'Eliminado', 'Removido de la lista de espera');
   });
 }
-}
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {
