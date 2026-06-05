@@ -32,7 +32,7 @@ async function exportPrescriptionPDF(id) {
   if (!rx) return;
   var patient = rx.patients || {};
   var medications = rx.medications || [];
-  var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  var doctorSig = await getDoctorSignature();
 
   var html = '<div class="header"><h1>RÉCIPE MÉDICO</h1></div><p class="date-emission">Fecha de emisión: ' + formatDateLong(new Date().toISOString().split('T')[0]) + '</p>';
   html += '<div class="patient-info">';
@@ -56,7 +56,15 @@ async function exportPrescriptionPDF(id) {
 
   if (rx.notes) html += '<p><strong>Notas:</strong> ' + rx.notes + '</p>';
 
-  html += '<div class="signature"><div class="signature-line">' + (user.name || 'Doctor') + '</div><small>Firma y sello</small></div>';
+  html += '<div class="signature"><div class="signature-line"></div>';
+  if (doctorSig) {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>' + doctorSig.name + '</strong></p>';
+    html += '<p style="margin:0;">' + doctorSig.specialty + '</p>';
+    if (doctorSig.license) html += '<p style="margin:0;font-size:0.8rem;">Lic: ' + doctorSig.license + '</p>';
+  } else {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>Doctor</strong></p>';
+  }
+  html += '</div>';
 
   generatePDF(html, 'recipe-' + patient.lastname + '-' + (rx.date || ''));
 }
@@ -66,7 +74,7 @@ async function exportOrderPDF(id) {
   var { data: order } = await db.from('orders').select('*, patients(name, lastname, patient_id)').eq('id', id).single();
   if (!order) return;
   var patient = order.patients || {};
-  var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  var doctorSig = await getDoctorSignature();
   var typeLabels = { lab: 'Laboratorio', imaging: 'Imagenología', procedure: 'Procedimiento', other: 'Otro' };
 
   var html = '<div class="header"><h1>ORDEN MÉDICA</h1></div><p class="date-emission">Fecha de emisión: ' + formatDateLong(new Date().toISOString().split('T')[0]) + '</p>';
@@ -79,7 +87,16 @@ async function exportOrderPDF(id) {
   html += '<p style="white-space:pre-line;">' + (order.description || '') + '</p>';
   if (order.notes) html += '<p><strong>Indicaciones:</strong> ' + order.notes + '</p>';
   html += '</div>';
-  html += '<div class="signature"><div class="signature-line">' + (user.name || 'Doctor') + '</div><small>Firma y sello</small></div>';
+  
+  html += '<div class="signature"><div class="signature-line"></div>';
+  if (doctorSig) {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>' + doctorSig.name + '</strong></p>';
+    html += '<p style="margin:0;">' + doctorSig.specialty + '</p>';
+    if (doctorSig.license) html += '<p style="margin:0;font-size:0.8rem;">Lic: ' + doctorSig.license + '</p>';
+  } else {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>Doctor</strong></p>';
+  }
+  html += '</div>';
 
   generatePDF(html, 'orden-' + patient.lastname + '-' + (order.date || ''));
 }
@@ -89,7 +106,7 @@ async function exportRestPDF(id) {
   var { data: rest } = await db.from('rest_records').select('*, patients(name, lastname, patient_id)').eq('id', id).single();
   if (!rest) return;
   var patient = rest.patients || {};
-  var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  var doctorSig = await getDoctorSignature();
 
   var html = '<div class="header"><h1>CONSTANCIA DE REPOSO MÉDICO</h1></div><p class="date-emission">Fecha de emisión: ' + formatDateLong(new Date().toISOString().split('T')[0]) + '</p>';
   html += '<div class="patient-info">';
@@ -103,7 +120,16 @@ async function exportRestPDF(id) {
   html += '<p><strong>Diagnóstico:</strong> ' + (rest.diagnosis || '') + '</p>';
   if (rest.notes) html += '<p><strong>Observaciones:</strong> ' + rest.notes + '</p>';
   html += '</div>';
-  html += '<div class="signature"><div class="signature-line">' + (user.name || 'Doctor') + '</div><small>Firma y sello</small></div>';
+  
+  html += '<div class="signature"><div class="signature-line"></div>';
+  if (doctorSig) {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>' + doctorSig.name + '</strong></p>';
+    html += '<p style="margin:0;">' + doctorSig.specialty + '</p>';
+    if (doctorSig.license) html += '<p style="margin:0;font-size:0.8rem;">Lic: ' + doctorSig.license + '</p>';
+  } else {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>Doctor</strong></p>';
+  }
+  html += '</div>';
 
   generatePDF(html, 'reposo-' + patient.lastname + '-' + (rest.start_date || ''));
 }
@@ -113,7 +139,7 @@ async function exportReferralPDF(id) {
   var { data: ref } = await db.from('referrals').select('*, patients(name, lastname, patient_id)').eq('id', id).single();
   if (!ref) return;
   var patient = ref.patients || {};
-  var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  var doctorSig = await getDoctorSignature();
 
   var html = '<div class="header"><h1>REFERENCIA MÉDICA</h1></div><p class="date-emission">Fecha de emisión: ' + formatDateLong(new Date().toISOString().split('T')[0]) + '</p>';
   html += '<div class="patient-info">';
@@ -128,7 +154,16 @@ async function exportReferralPDF(id) {
   html += '<p style="white-space:pre-line;">' + (ref.reason || '') + '</p>';
   if (ref.notes) html += '<p><strong>Notas:</strong> ' + ref.notes + '</p>';
   html += '</div>';
-  html += '<div class="signature"><div class="signature-line">' + (user.name || 'Doctor') + '</div><small>Firma y sello</small></div>';
+  
+  html += '<div class="signature"><div class="signature-line"></div>';
+  if (doctorSig) {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>' + doctorSig.name + '</strong></p>';
+    html += '<p style="margin:0;">' + doctorSig.specialty + '</p>';
+    if (doctorSig.license) html += '<p style="margin:0;font-size:0.8rem;">Lic: ' + doctorSig.license + '</p>';
+  } else {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>Doctor</strong></p>';
+  }
+  html += '</div>';
 
   generatePDF(html, 'referencia-' + patient.lastname + '-' + (ref.date || ''));
 }
@@ -139,7 +174,7 @@ async function exportTreatmentPlanPDF(id) {
   var { data: tp } = await db.from('treatment_plans').select('*, patients(name, lastname, patient_id)').eq('id', id).single();
   if (!tp) return;
   var patient = tp.patients || {};
-  var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  var doctorSig = await getDoctorSignature();
 
   var html = '<div class="header"><h1>PLAN DE TRATAMIENTO</h1></div>';
   html += '<p class="date-emission">Fecha de emisión: ' + formatDateLong(new Date().toISOString().split('T')[0]) + '</p>';
@@ -158,7 +193,15 @@ async function exportTreatmentPlanPDF(id) {
   if (tp.follow_up) html += '<h3>Seguimiento:</h3><p>' + tp.follow_up + '</p>';
   html += '</div>';
 
-  html += '<div class="signature"><div class="signature-line">' + (user.name || 'Doctor') + '</div><small>Firma y sello</small></div>';
+  html += '<div class="signature"><div class="signature-line"></div>';
+  if (doctorSig) {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>' + doctorSig.name + '</strong></p>';
+    html += '<p style="margin:0;">' + doctorSig.specialty + '</p>';
+    if (doctorSig.license) html += '<p style="margin:0;font-size:0.8rem;">Lic: ' + doctorSig.license + '</p>';
+  } else {
+    html += '<p style="margin:0.5rem 0 0 0;"><strong>Doctor</strong></p>';
+  }
+  html += '</div>';
 
   generatePDF(html, 'plan-tratamiento-' + patient.lastname);
 }

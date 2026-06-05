@@ -60,8 +60,12 @@ document.addEventListener('DOMContentLoaded', function() {
         days_of_week: daysOfWeek,
         is_active: true
       };
-      var { error } = await db.from('recurring_appointments').insert(data);
-      if (error) { showToast('error', 'Error', error.message); return; }
+      { var result = await dbInsert('recurring_appointments', data); var error = result.error; }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar la cita recurrente';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeRecurringAppointmentModal();
       refreshRecurringAppointments();
       showToast('success', 'Creada', 'Cita recurrente creada');

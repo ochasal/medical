@@ -36,20 +36,50 @@
   <div class="login-container">
     <div class="login-logo"><i class="fas fa-hospital fa-3x"></i></div>
     <h1 class="login-title">Sistema Médico</h1>
-    <p class="login-subtitle">Inicie sesión para continuar</p>
-    <form id="loginForm" class="login-form">
-      <div class="login-field">
-        <label for="loginEmail"><i class="fas fa-envelope"></i> Email</label>
-        <input type="email" id="loginEmail" placeholder="doctor@clinica.com" required />
-      </div>
-      <div class="login-field">
-        <label for="loginPassword"><i class="fas fa-lock"></i> Contraseña</label>
-        <input type="password" id="loginPassword" placeholder="********" required />
-      </div>
-      <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
-      <p id="loginError" class="login-error" style="display:none;"></p>
-      <p class="login-hint">Demo: admin@clinica.com / admin123</p>
-    </form>
+    <p class="login-subtitle">Gestión médica profesional</p>
+
+    <!-- Login Section -->
+    <div id="loginSection">
+      <form id="loginForm" class="login-form">
+        <div class="login-field">
+          <label for="loginEmail"><i class="fas fa-envelope"></i> Email</label>
+          <input type="email" id="loginEmail" placeholder="doctor@email.com" required />
+        </div>
+        <div class="login-field">
+          <label for="loginPassword"><i class="fas fa-lock"></i> Contraseña</label>
+          <input type="password" id="loginPassword" placeholder="********" required />
+        </div>
+        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</button>
+        <p id="loginError" class="login-error" style="display:none;"></p>
+      </form>
+      <p style="text-align:center;margin-top:1rem;color:var(--text-secondary);">
+        ¿No tienes cuenta? <a href="#" onclick="toggleAuthForm(); return false;" style="color:var(--accent-color);font-weight:600;">Regístrate</a>
+      </p>
+    </div>
+
+    <!-- Register Section -->
+    <div id="registerSection" style="display:none;">
+      <form id="registerForm" class="login-form">
+        <div class="login-field">
+          <label for="registerName"><i class="fas fa-user-md"></i> Nombre completo</label>
+          <input type="text" id="registerName" placeholder="Dr. Juan Pérez" required />
+        </div>
+        <div class="login-field">
+          <label for="registerEmail"><i class="fas fa-envelope"></i> Email</label>
+          <input type="email" id="registerEmail" placeholder="doctor@email.com" required />
+        </div>
+        <div class="login-field">
+          <label for="registerPassword"><i class="fas fa-lock"></i> Contraseña</label>
+          <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6" />
+        </div>
+        <button type="submit" class="login-btn" style="background:var(--success-color);"><i class="fas fa-user-plus"></i> Crear Cuenta</button>
+        <p id="registerError" class="login-error" style="display:none;"></p>
+        <p id="registerSuccess" class="login-error" style="display:none;color:var(--success-color);background:rgba(76,175,80,0.1);"></p>
+      </form>
+      <p style="text-align:center;margin-top:1rem;color:var(--text-secondary);">
+        ¿Ya tienes cuenta? <a href="#" onclick="toggleAuthForm(); return false;" style="color:var(--accent-color);font-weight:600;">Iniciar Sesión</a>
+      </p>
+    </div>
   </div>
 </div>
 
@@ -118,9 +148,6 @@
         <h2>Inicio</h2>
         <div class="view-actions">
           <button class="btn btn-primary" onclick="refreshDashboard()"><i class="fas fa-sync-alt"></i> Actualizar</button>
-          <button class="btn btn-success" onclick="exportAllData()"><i class="fas fa-download"></i> Backup</button>
-          <button class="btn btn-info" onclick="document.getElementById('importBackupInput').click()"><i class="fas fa-upload"></i> Restaurar</button>
-          <input type="file" id="importBackupInput" accept=".json" style="display:none;" onchange="importBackup(this.files[0])">
         </div>
       </div>
       <div class="stats-grid">
@@ -138,7 +165,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon"><i class="fas fa-prescription-bottle"></i></div>
-          <div class="stat-content"><h3 id="activePrescriptions">0</h3><p>Recetas Activas</p></div>
+          <div class="stat-content"><h3 id="activePrescriptions">0</h3><p>Récipes Activos</p></div>
         </div>
       </div>
       <div class="charts-grid">
@@ -179,6 +206,60 @@
           </thead>
           <tbody id="patientsTableBody"></tbody>
         </table>
+      </div>
+
+      <!-- Patient Detail View -->
+      <div id="patientDetailView" style="display: none;">
+        <button class="btn btn-secondary" onclick="backToPatientsList()" style="margin-bottom: 1.5rem;">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+          <div style="background: rgba(255,255,255,0.98); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+            <h3 style="margin: 0 0 1.5rem 0;"><i class="fas fa-user"></i> Información</h3>
+            <div style="display: grid; gap: 1rem; font-size: 0.95rem;">
+              <div><strong>Nombre:</strong> <span id="detailPatientName">-</span></div>
+              <div><strong>Cédula:</strong> <span id="detailPatientId">-</span></div>
+              <div><strong>Teléfono:</strong> <span id="detailPatientPhone">-</span></div>
+              <div><strong>Email:</strong> <span id="detailPatientEmail">-</span></div>
+              <div><strong>Dirección:</strong> <span id="detailPatientAddress">-</span></div>
+              <div><strong>Sangre:</strong> <span id="detailPatientBloodType">-</span></div>
+            </div>
+            <button class="btn btn-primary" onclick="editPatientFromDetail()" style="margin-top: 1.5rem; width: 100%;">
+              <i class="fas fa-edit"></i> Editar
+            </button>
+          </div>
+          
+          <div>
+            <div style="background: rgba(255,255,255,0.98); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 1.5rem;">
+              <h3 style="margin: 0 0 1rem 0;"><i class="fas fa-file-medical"></i> Documentos</h3>
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <input type="file" id="detailPatientFileInput" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px;" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png,.gif" />
+                <button class="btn btn-primary" onclick="uploadDocFromDetail()"><i class="fas fa-upload"></i></button>
+              </div>
+              <div id="detailPatientDocuments" style="max-height: 250px; overflow-y: auto; font-size: 0.9rem;"></div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.98); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+              <h3 style="margin: 0 0 1rem 0;"><i class="fas fa-chart-bar"></i> Resumen</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                  <p style="font-size: 1.75rem; font-weight: 700; margin: 0; color: var(--accent-color);" id="detailCitasCount">0</p>
+                  <p style="font-size: 0.85rem; margin: 0.5rem 0 0 0; color: var(--text-secondary);">Citas</p>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                  <p style="font-size: 1.75rem; font-weight: 700; margin: 0; color: var(--accent-color);" id="detailConsultasCount">0</p>
+                  <p style="font-size: 0.85rem; margin: 0.5rem 0 0 0; color: var(--text-secondary);">Consultas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+          <h3><i class="fas fa-stethoscope"></i> Historial</h3>
+          <div id="detailConsultationsHistory" style="display: grid; gap: 1rem;"></div>
+        </div>
       </div>
     </div>
 
@@ -232,6 +313,18 @@
       </div>
       <div id="medicalRecordsContent">
         <p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Seleccione un paciente para ver su historial médico.</p>
+      </div>
+      <!-- Patient Documents Section -->
+      <div id="patientDocumentsSection" style="display: none; margin-top: 2rem;">
+        <div class="stats-grid" style="grid-template-columns: 1fr;">
+          <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1rem;">
+              <h4 style="margin: 0;"><i class="fas fa-file-medical"></i> Documentos del Paciente</h4>
+              <button type="button" class="btn btn-secondary btn-small" id="addDocumentBtn" onclick="openPatientDocumentModal()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"><i class="fas fa-plus"></i> Nuevo Documento</button>
+            </div>
+            <div id="patientDocumentsContainer" style="width: 100%;"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -509,11 +602,13 @@
             <div>
               <h3 id="userProfileName" style="margin: 0;">-</h3>
               <p id="userProfileEmail" style="margin: 0.25rem 0; color: var(--text-secondary);">-</p>
-              <span id="userProfileRole" class="badge badge-primary">-</span>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Información Profesional -->
+      <div id="doctorProfileContainer" style="margin-top: 1.5rem;"></div>
 
       <!-- Apariencia -->
       <div class="stats-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
@@ -580,7 +675,7 @@
       <!-- SOAP Form -->
       <div class="stats-grid" style="grid-template-columns: 1fr;">
         <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
-          <h4><i class="fas fa-comment-medical"></i> Subjetivo</h4>
+          <h4><i class="fas fa-comment-medical"></i> Motivo de Consulta</h4>
           <div class="form-group" style="width:100%"><textarea id="cvSymptoms" rows="3" placeholder="Motivo de consulta, síntomas..."></textarea></div>
         </div>
       </div>
@@ -608,6 +703,16 @@
           <h4><i class="fas fa-clipboard-list"></i> Plan</h4>
           <div class="form-group" style="width:100%"><textarea id="cvTratamiento" rows="3" placeholder="Medicamentos, indicaciones..."></textarea></div>
           <div class="form-group" style="width:100%"><input type="text" id="cvSeguimiento" placeholder="Seguimiento: ej. Control en 2 semanas" /></div>
+        </div>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start;">
+          <h4><i class="fas fa-paperclip"></i> Adjuntos de Consulta</h4>
+          <div id="consultationAttachmentsContainer" style="margin-bottom: 1rem; width: 100%;"></div>
+          <div style="display: flex; gap: 0.5rem; width: 100%;">
+            <input type="file" id="consultationFileInput" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 6px;" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png,.gif" />
+            <button type="button" class="btn btn-primary" onclick="uploadConsultationAttachment()"><i class="fas fa-upload"></i></button>
+          </div>
         </div>
       </div>
       <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
@@ -679,6 +784,19 @@
           <div class="form-group"><label>Teléfono Emergencia</label><input type="tel" id="emergencyContactPhone" /></div>
           <div class="form-group"><label>Relación</label><input type="text" id="emergencyContactRelation" /></div>
         </div>
+
+        <!-- Documentos del Paciente -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+          <h4 style="margin: 0 0 1rem 0;"><i class="fas fa-file-medical"></i> Documentos</h4>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <input type="file" id="patientFileInput" style="flex: 1;" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png,.gif" />
+            <button type="button" class="btn btn-primary" onclick="handlePatientAttachmentUpload(document.getElementById('patientFileInput').files[0], document.getElementById('editPatientId').value); document.getElementById('patientFileInput').value = '';" style="padding: 0.75rem 1rem;">
+              <i class="fas fa-upload"></i> Subir
+            </button>
+          </div>
+          <div id="patientAttachmentsContainer" style="min-height: 50px;"></div>
+        </div>
+
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closePatientModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar Paciente</button>
@@ -1009,9 +1127,70 @@
   </div>
 </div>
 
+<!-- Patient Document Upload Modal -->
+<div id="patientDocumentModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>Subir Documento</h3>
+      <span class="close" onclick="closePatientDocumentModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="documentPatientId" />
+      <div class="form-group">
+        <label>Archivo *</label>
+        <input type="file" id="documentUploadInput" onchange="handleDocumentUpload(event)" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx" required />
+        <small style="color: var(--text-secondary);">Soportados: PDF, Word, Excel, JPG, PNG, GIF (Max 25MB)</small>
+      </div>
+      <div id="documentPreview" style="margin: 1rem 0;"></div>
+      <div id="documentFileInfo" style="margin: 1rem 0;"></div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <input type="text" id="documentDescription" placeholder="Ej: Resultados de laboratorio, Radiografía, etc." />
+      </div>
+      <div class="form-group">
+        <label>Fecha del Documento</label>
+        <input type="date" id="documentDate" />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="closePatientDocumentModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="uploadPatientDocument()">Subir Documento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Consultation Attachment Modal -->
+<div id="consultationAttachmentModal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>Adjuntar Documento a Consulta</h3>
+      <span class="close" onclick="closeConsultationAttachmentModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="attachmentConsultationId" />
+      <div class="form-group">
+        <label>Archivo *</label>
+        <input type="file" id="attachmentUploadInput" onchange="handleAttachmentUpload(event)" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx" required />
+        <small style="color: var(--text-secondary);">Soportados: PDF, Word, Excel, JPG, PNG, GIF (Max 25MB)</small>
+      </div>
+      <div id="attachmentPreview" style="margin: 1rem 0;"></div>
+      <div id="attachmentFileInfo" style="margin: 1rem 0;"></div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <input type="text" id="attachmentDescription" placeholder="Descripción del adjunto..." />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeConsultationAttachmentModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="uploadConsultationAttachment()">Adjuntar Documento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts - Módulos -->
 <script src="js/supabase-config.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/attachments.js"></script>
 <script src="js/patients.js"></script>
 <script src="js/appointments.js"></script>
 <script src="js/prescriptions.js"></script>

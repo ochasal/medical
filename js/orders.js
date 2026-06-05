@@ -98,8 +98,12 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       var error;
       if (editId) { ({ error } = await db.from('orders').update(data).eq('id', editId)); }
-      else { ({ error } = await db.from('orders').insert(data)); }
-      if (error) { showToast('error', 'Error', error.message); return; }
+      else { { var result = await dbInsert('orders', data); error = result.error; } }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar la orden';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeOrderModal();
       refreshOrders();
       showToast('success', 'Guardada', editId ? 'Orden actualizada' : 'Orden creada');

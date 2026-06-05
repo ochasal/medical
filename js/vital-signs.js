@@ -69,8 +69,12 @@ document.addEventListener('DOMContentLoaded', function() {
         weight: parseFloat(document.getElementById('vitalSignsWeight').value) || null,
         height: parseFloat(document.getElementById('vitalSignsHeight').value) || null
       };
-      var { error } = await db.from('vital_signs').insert(data);
-      if (error) { showToast('error', 'Error', error.message); return; }
+      { var result = await dbInsert('vital_signs', data); var error = result.error; }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar los signos vitales';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeVitalSignsModal();
       refreshVitalSigns();
       showToast('success', 'Guardado', 'Signos vitales registrados');

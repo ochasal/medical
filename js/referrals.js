@@ -99,8 +99,12 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       var error;
       if (editId) { ({ error } = await db.from('referrals').update(data).eq('id', editId)); }
-      else { ({ error } = await db.from('referrals').insert(data)); }
-      if (error) { showToast('error', 'Error', error.message); return; }
+      else { { var result = await dbInsert('referrals', data); error = result.error; } }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar la referencia';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeReferralModal();
       refreshReferrals();
       showToast('success', 'Guardada', editId ? 'Referencia actualizada' : 'Referencia creada');

@@ -55,7 +55,11 @@ function closePrescriptionModal() { document.getElementById('prescriptionModal')
 
 async function refreshPrescriptions() {
   var { data: prescriptions, error } = await db.from('prescriptions').select('*, patients(name, lastname)').order('created_at', { ascending: false });
-  if (error) { console.error(error); return; }
+  if (error) { 
+    var errorMsg = error.message || 'Error al cargar los récipes';
+    showToast('error', 'Error', errorMsg); 
+    return; 
+  }
   var tbody = document.getElementById('prescriptionsTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -152,7 +156,11 @@ async function viewPrescription(id) {
 async function deletePrescription(id) {
   showConfirm('Eliminar Récipe', '¿Está seguro?', async function() {
     var { error } = await db.from('prescriptions').delete().eq('id', id);
-    if (error) { showToast('error', 'Error', error.message); return; }
+    if (error) { 
+      var errorMsg = error.message || 'Error al eliminar el récipe';
+      showToast('error', 'Error', errorMsg); 
+      return; 
+    }
     refreshPrescriptions();
     showToast('success', 'Eliminado', 'Récipe eliminado');
   });
@@ -186,8 +194,15 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       var error;
       if (editId) { ({ error } = await db.from('prescriptions').update(data).eq('id', editId)); }
-      else { ({ error } = await db.from('prescriptions').insert(data)); }
-      if (error) { showToast('error', 'Error', error.message); return; }
+      else { { var result = await dbInsert('prescriptions', data); error = result.error; } }
+      if (error) { 
+        var errorMsg = 'Error al guardar el récipe';
+        if (error.message) {
+          errorMsg = error.message;
+        }
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closePrescriptionModal();
       refreshPrescriptions();
       showToast('success', 'Guardado', editId ? 'Récipe actualizado' : 'Récipe creado');

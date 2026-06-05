@@ -1,38 +1,75 @@
-// ===== INICIALIZACIÓN Y AUTH =====
+// ===== AUTH CON SUPABASE =====
 
-var DEMO_USERS = [
-  { email: 'admin@clinica.com', password: 'admin123', name: 'Dr. Admin', role: 'admin' },
-  { email: 'doctor@clinica.com', password: 'doctor123', name: 'Dr. García', role: 'doctor' }
-];
+var currentUser = null;
 
-function login(email, password) {
-  var user = DEMO_USERS.find(function(u) { return u.email === email && u.password === password; });
-  if (user) {
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('headerUserName').textContent = user.name;
-    document.getElementById('dropdownUserName').textContent = user.name;
-    document.getElementById('dropdownUserEmail').textContent = user.email;
-    initApp();
-    return true;
+async function login(email, password) {
+  var { data, error } = await db.auth.signInWithPassword({ email: email, password: password });
+  if (error) {
+    var errorMessages = {
+      'Invalid login credentials': 'Email o contraseña incorrectos',
+      'Email not confirmed': 'Debes confirmar tu email primero',
+      'User not found': 'Usuario no encontrado',
+      'Too many requests': 'Demasiados intentos, espera un momento'
+    };
+    return { error: errorMessages[error.message] || error.message };
   }
-  return false;
+  currentUser = data.user;
+  localStorage.setItem('currentUser', JSON.stringify({ email: data.user.email, name: data.user.user_metadata.name || email.split('@')[0], id: data.user.id }));
+  showApp();
+  initApp();
+  return { success: true };
 }
 
-function logout() {
+async function register(name, email, password) {
+  var { data, error } = await db.auth.signUp({
+    email: email,
+    password: password,
+    options: { data: { name: name } }
+  });
+  if (error) {
+    var errorMessages = {
+      'User already registered': 'Este email ya está registrado',
+      'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres',
+      'Unable to validate email address: invalid format': 'Formato de email inválido'
+    };
+    return { error: errorMessages[error.message] || error.message };
+  }
+  return { success: true, message: 'Cuenta creada. Revisa tu email para confirmar.' };
+}
+
+async function logout() {
+  await db.auth.signOut();
+  currentUser = null;
   localStorage.removeItem('currentUser');
   document.getElementById('loginScreen').style.display = 'flex';
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.main-layout').style.display = 'none';
 }
 
-function checkAuth() {
-  var user = JSON.parse(localStorage.getItem('currentUser') || 'null');
-  if (user) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('headerUserName').textContent = user.name;
-    document.getElementById('dropdownUserName').textContent = user.name;
-    document.getElementById('dropdownUserEmail').textContent = user.email;
+async function checkAuth() {
+  var { data: { session } } = await db.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    localStorage.setItem('currentUser', JSON.stringify({ email: session.user.email, name: session.user.user_metadata.name || session.user.email.split('@')[0], id: session.user.id }));
+    showApp();
     initApp();
   }
+}
+
+function showApp() {
+  var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  document.getElementById('loginScreen').style.display = 'none';
+  document.querySelector('.header').style.display = 'block';
+  document.querySelector('.main-layout').style.display = 'flex';
+  document.getElementById('headerUserName').textContent = user.name || 'Doctor';
+  document.getElementById('dropdownUserName').textContent = user.name || 'Doctor';
+  document.getElementById('dropdownUserEmail').textContent = user.email || '';
+}
+
+function getUserId() {
+  if (currentUser) return currentUser.id;
+  var stored = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  return stored.id || null;
 }
 
 // ===== NAVEGACIÓN =====
@@ -53,8 +90,6 @@ function showView(viewName) {
   else if (viewName === 'vital-signs') refreshVitalSigns();
   else if (viewName === 'recurring-appointments') refreshRecurringAppointments();
   else if (viewName === 'waiting-list') refreshWaitingList();
-  else if (viewName === 'ai-insights') refreshAIInsights();
-  else if (viewName === 'automation') refreshAutomationStatus();
   else if (viewName === 'offices') loadOffices();
   else if (viewName === 'user-profile') loadUserProfile();
 }
@@ -67,6 +102,15 @@ function toggleSidebar() {
 function toggleUserMenu() {
   document.getElementById('userDropdown').classList.toggle('show');
 }
+
+// Close user menu when clicking outside
+document.addEventListener('click', function(e) {
+  var dropdown = document.getElementById('userDropdown');
+  var userMenu = document.getElementById('userMenu');
+  if (dropdown && userMenu && !userMenu.contains(e.target)) {
+    dropdown.classList.remove('show');
+  }
+});
 
 function setupNavigation() {
   document.querySelectorAll('.nav-link').forEach(function(link) {
@@ -84,7 +128,6 @@ async function refreshDashboard() {
   var { data: patients } = await db.from('patients').select('id');
   var { data: appointments } = await db.from('appointments').select('id, date, status');
   var { data: prescriptions } = await db.from('prescriptions').select('id, status');
-
   document.getElementById('totalPatients').textContent = patients ? patients.length : 0;
   var today = new Date().toISOString().split('T')[0];
   var todayCount = appointments ? appointments.filter(function(a) { return a.date === today; }).length : 0;
@@ -97,7 +140,7 @@ async function refreshDashboard() {
 async function exportAllData() {
   showToast('info', 'Backup', 'Descargando datos...');
   var backup = {};
-  var tables = ['patients', 'appointments', 'consultations', 'prescriptions', 'treatment_plans', 'vital_signs', 'recurring_appointments', 'waiting_list', 'offices'];
+  var tables = ['patients', 'appointments', 'consultations', 'prescriptions', 'treatment_plans', 'vital_signs', 'recurring_appointments', 'waiting_list', 'offices', 'orders', 'rest_records', 'referrals'];
   for (var i = 0; i < tables.length; i++) {
     var { data } = await db.from(tables[i]).select('*');
     backup[tables[i]] = data || [];
@@ -119,28 +162,86 @@ function importBackup(file) {
 // ===== INIT =====
 function initApp() {
   setupNavigation();
-  refreshDashboard();
+  showView('dashboard');
 }
 
 // ===== DOM READY =====
 document.addEventListener('DOMContentLoaded', function() {
+  // Hide app until auth check
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.main-layout').style.display = 'none';
+
   checkAuth();
 
+  // Login form
   var loginForm = document.getElementById('loginForm');
   if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
+    loginForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       var email = document.getElementById('loginEmail').value;
       var password = document.getElementById('loginPassword').value;
-      if (!login(email, password)) {
-        var err = document.getElementById('loginError');
-        err.textContent = 'Email o contraseña incorrectos';
+      var err = document.getElementById('loginError');
+      var btn = loginForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ingresando...';
+      err.style.display = 'none';
+      var result = await login(email, password);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+      if (result.error) {
+        err.textContent = result.error;
         err.style.display = 'block';
       }
     });
   }
 
+  // Register form
+  var registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var name = document.getElementById('registerName').value;
+      var email = document.getElementById('registerEmail').value;
+      var password = document.getElementById('registerPassword').value;
+      var errEl = document.getElementById('registerError');
+      var successEl = document.getElementById('registerSuccess');
+      var btn = registerForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
+      errEl.style.display = 'none';
+      if (successEl) successEl.style.display = 'none';
+      var result = await register(name, email, password);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear Cuenta';
+      if (result.error) {
+        errEl.textContent = result.error;
+        errEl.style.display = 'block';
+      } else {
+        if (successEl) {
+          successEl.textContent = result.message;
+          successEl.style.display = 'block';
+        } else {
+          showToast('success', 'Cuenta creada', result.message);
+        }
+        registerForm.reset();
+      }
+    });
+  }
+
+  // Close modals on outside click
   window.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) e.target.style.display = 'none';
   });
 });
+
+function toggleAuthForm() {
+  var loginSection = document.getElementById('loginSection');
+  var registerSection = document.getElementById('registerSection');
+  if (loginSection.style.display === 'none') {
+    loginSection.style.display = 'block';
+    registerSection.style.display = 'none';
+  } else {
+    loginSection.style.display = 'none';
+    registerSection.style.display = 'block';
+  }
+}

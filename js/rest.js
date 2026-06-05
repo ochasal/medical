@@ -117,8 +117,12 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       var error;
       if (editId) { ({ error } = await db.from('rest_records').update(data).eq('id', editId)); }
-      else { ({ error } = await db.from('rest_records').insert(data)); }
-      if (error) { showToast('error', 'Error', error.message); return; }
+      else { { var result = await dbInsert('rest_records', data); error = result.error; } }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar el reposo médico';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeRestModal();
       refreshRest();
       showToast('success', 'Guardado', editId ? 'Reposo actualizado' : 'Reposo creado');

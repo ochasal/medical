@@ -16,7 +16,7 @@ async function refreshAIInsights() {
   container.innerHTML =
     '<div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-content"><h3>' + totalP + '</h3><p>Pacientes</p></div></div>' +
     '<div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar"></i></div><div class="stat-content"><h3>' + totalA + '</h3><p>Citas</p></div></div>' +
-    '<div class="stat-card"><div class="stat-icon"><i class="fas fa-prescription-bottle"></i></div><div class="stat-content"><h3>' + activeRx + '</h3><p>Recetas Activas</p></div></div>' +
+    '<div class="stat-card"><div class="stat-icon"><i class="fas fa-prescription-bottle"></i></div><div class="stat-content"><h3>' + activeRx + '</h3><p>Récipes Activos</p></div></div>' +
     '<div class="stat-card"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-content"><h3>' + rate + '%</h3><p>Tasa Completación</p></div></div>';
 }
 
@@ -35,7 +35,7 @@ function refreshAutomationStatus() {
   var rules = [
     { name: 'Recordatorios de Citas', enabled: true, desc: 'Envía recordatorios 24h y 2h antes' },
     { name: 'Monitoreo de Ausencias', enabled: true, desc: 'Seguimiento automático de no-shows' },
-    { name: 'Alertas de Recetas', enabled: true, desc: 'Notificaciones de renovación' },
+    { name: 'Alertas de Récipes', enabled: true, desc: 'Notificaciones de renovación' },
     { name: 'Análisis de Riesgos', enabled: true, desc: 'Evaluación automática de riesgos' }
   ];
   container.innerHTML = rules.map(function(r) {

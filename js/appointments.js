@@ -41,6 +41,15 @@ async function openScheduleModal() {
   if (patients) patients.forEach(function(p) {
     select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>';
   });
+  
+  // Cargar offices
+  var { data: offices } = await db.from('offices').select('id, name').order('name');
+  var officeSelect = document.getElementById('scheduleOffice');
+  officeSelect.innerHTML = '<option value="">Seleccionar consultorio</option>';
+  if (offices) offices.forEach(function(o) {
+    officeSelect.innerHTML += '<option value="' + o.name + '">' + o.name + '</option>';
+  });
+  
   document.getElementById('scheduleForm').reset();
   document.getElementById('scheduleModal').style.display = 'block';
 }
@@ -50,7 +59,11 @@ function closeScheduleModal() { document.getElementById('scheduleModal').style.d
 async function cancelAppointment(id) {
   showConfirm('Cancelar Cita', '¿Desea cancelar esta cita?', async function() {
     var { error } = await db.from('appointments').update({ status: 'cancelled' }).eq('id', id);
-    if (error) { showToast('error', 'Error', error.message); return; }
+    if (error) { 
+      var errorMsg = error.message || 'Error al cancelar la cita';
+      showToast('error', 'Error', errorMsg); 
+      return; 
+    }
     loadAppointments();
     showToast('success', 'Cancelada', 'Cita cancelada');
   });
@@ -90,8 +103,22 @@ async function saveConsultation() {
   var { data: apt } = await db.from('appointments').select('patient_id').eq('id', appointmentId).single();
   if (apt) consultationData.patient_id = apt.patient_id;
 
+  consultationData.user_id = getUserId();
+  
+  // Include pending attachments
+  if (window.pendingConsultationAttachments && window.pendingConsultationAttachments.length > 0) {
+    consultationData.attachments = window.pendingConsultationAttachments;
+  }
+
   var { error } = await db.from('consultations').insert(consultationData);
-  if (error) { showToast('error', 'Error', error.message); return; }
+  if (error) { 
+    var errorMsg = error.message || 'Error al guardar la consulta';
+    showToast('error', 'Error', errorMsg); 
+    return; 
+  }
+
+  // Clear pending attachments
+  window.pendingConsultationAttachments = [];
 
   // Mark appointment as completed
   await db.from('appointments').update({ status: 'completed' }).eq('id', appointmentId);
@@ -125,7 +152,16 @@ document.addEventListener('DOMContentLoaded', function() {
         status: 'scheduled'
       };
       var { error } = await db.from('appointments').insert(appointmentData);
-      if (error) { showToast('error', 'Error', error.message); return; }
+      if (error) { 
+        var errorMsg = 'Error al programar la cita';
+        if (error.code === '23505' || error.message.includes('duplicate')) {
+          errorMsg = 'Ya existe una cita en esa fecha y hora';
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeScheduleModal();
       loadAppointments();
       showToast('success', 'Programada', 'Cita creada correctamente');

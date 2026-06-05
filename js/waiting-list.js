@@ -49,8 +49,12 @@ document.addEventListener('DOMContentLoaded', function() {
         priority: document.getElementById('waitingListPriority').value,
         status: 'waiting'
       };
-      var { error } = await db.from('waiting_list').insert(data);
-      if (error) { showToast('error', 'Error', error.message); return; }
+      { var result = await dbInsert('waiting_list', data); var error = result.error; }
+      if (error) { 
+        var errorMsg = error.message || 'Error al agregar a la lista de espera';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeWaitingListModal();
       refreshWaitingList();
       showToast('success', 'Agregado', 'Paciente en lista de espera');

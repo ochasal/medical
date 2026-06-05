@@ -10,7 +10,7 @@ function closeOfficeModal() { document.getElementById('officeModal').style.displ
 
 async function loadOffices() {
   var { data: offices, error } = await db.from('offices').select('*').order('created_at', { ascending: false });
-  if (error) { console.error(error); return; }
+  if (error) { return; }
   var container = document.getElementById('officesContent');
   if (!container) return;
   if (!offices || offices.length === 0) {
@@ -76,8 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       var error;
       if (editId) { ({ error } = await db.from('offices').update(data).eq('id', editId)); }
-      else { ({ error } = await db.from('offices').insert(data)); }
-      if (error) { showToast('error', 'Error', error.message); return; }
+      else { { var result = await dbInsert('offices', data); error = result.error; } }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar el consultorio';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeOfficeModal();
       loadOffices();
       showToast('success', 'Guardado', 'Consultorio guardado');

@@ -82,7 +82,11 @@ async function editTreatmentPlan(id) {
 async function deleteTreatmentPlan(id) {
   showConfirm('Eliminar Plan', '¿Está seguro?', async function() {
     var { error } = await db.from('treatment_plans').delete().eq('id', id);
-    if (error) { showToast('error', 'Error', error.message); return; }
+    if (error) { 
+      var errorMsg = error.message || 'Error al eliminar el plan';
+      showToast('error', 'Error', errorMsg); 
+      return; 
+    }
     refreshTreatmentPlans();
     showToast('success', 'Eliminado', 'Plan eliminado');
   });
@@ -116,8 +120,12 @@ document.addEventListener('DOMContentLoaded', function() {
       };
       var error;
       if (editId) { ({ error } = await db.from('treatment_plans').update(data).eq('id', editId)); }
-      else { ({ error } = await db.from('treatment_plans').insert(data)); }
-      if (error) { showToast('error', 'Error', error.message); return; }
+      else { { var result = await dbInsert('treatment_plans', data); error = result.error; } }
+      if (error) { 
+        var errorMsg = error.message || 'Error al guardar el plan de tratamiento';
+        showToast('error', 'Error', errorMsg); 
+        return; 
+      }
       closeTreatmentPlanModal();
       refreshTreatmentPlans();
       showToast('success', 'Guardado', editId ? 'Plan actualizado' : 'Plan creado');
