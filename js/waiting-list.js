@@ -46,10 +46,21 @@ document.addEventListener('DOMContentLoaded', function() {
   if (form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
+      var preferredDate = document.getElementById('waitingListPreferredDate').value;
+      
+      // Validar que la fecha no sea anterior a hoy
+      if (preferredDate) {
+        var today = new Date().toISOString().split('T')[0];
+        if (preferredDate < today) {
+          showToast('error', 'Error', 'La fecha preferida no puede ser anterior a hoy');
+          return;
+        }
+      }
+
       var data = {
         patient_id: document.getElementById('waitingListPatient').value,
         type: document.getElementById('waitingListType').value,
-        preferred_date: document.getElementById('waitingListPreferredDate').value || null,
+        preferred_date: preferredDate || null,
         priority: document.getElementById('waitingListPriority').value,
         status: 'waiting'
       };

@@ -24,8 +24,8 @@ async function loadOffices() {
       '<p style="margin:0.25rem 0;color:var(--text-secondary);">Tel: ' + (o.phone || 'N/A') + '</p>' +
       '<p style="margin:0;color:var(--text-secondary);">Horario: ' + (o.start_time || '').substring(0,5) + ' - ' + (o.end_time || '').substring(0,5) + '</p>' +
       '<div style="margin-top:0.75rem;display:flex;gap:0.5rem;">' +
-        '<button onclick="editOffice(\'' + o.id + '\')" style="background:var(--info-color);color:white;border:none;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-edit"></i> Editar</button>' +
-        '<button onclick="deleteOffice(\'' + o.id + '\')" style="background:var(--danger-color);color:white;border:none;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-size:0.85rem;"><i class="fas fa-trash"></i> Eliminar</button>' +
+        '<button onclick="editOffice(\'' + o.id + '\')" class="btn btn-sm btn-info"><i class="fas fa-edit"></i> Editar</button>' +
+        '<button onclick="deleteOffice(\'' + o.id + '\')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Eliminar</button>' +
       '</div>' +
       '</div>';
   }).join('');

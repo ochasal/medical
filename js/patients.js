@@ -264,10 +264,18 @@ document.addEventListener('DOMContentLoaded', function() {
     patientForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       var editId = document.getElementById('editPatientId').value;
+      var cedulaInput = document.getElementById('patientIdInput').value;
+      
+      // Validar que cédula solo contenga números
+      if (cedulaInput && !/^\d+$/.test(cedulaInput)) {
+        showToast('error', 'Error', 'La cédula solo puede contener números');
+        return;
+      }
+
       var patientData = {
         name: document.getElementById('patientName').value,
         lastname: document.getElementById('patientLastname').value,
-        patient_id: document.getElementById('patientIdInput').value,
+        patient_id: cedulaInput,
         birth_date: document.getElementById('patientBirthDate').value || null,
         gender: document.getElementById('patientGender').value,
         blood_type: document.getElementById('patientBloodType').value,
@@ -278,6 +286,16 @@ document.addEventListener('DOMContentLoaded', function() {
         medications: document.getElementById('patientMedications').value,
         medical_history: document.getElementById('patientMedicalHistory').value
       };
+
+      // Verificar duplicado antes de insertar
+      if (!editId && cedulaInput) {
+        var userId = getUserId();
+        var { data: existing } = await db.from('patients').select('id').eq('user_id', userId).eq('patient_id', cedulaInput);
+        if (existing && existing.length > 0) {
+          showToast('error', 'Error', 'Ya existe un paciente con la cédula ' + cedulaInput);
+          return;
+        }
+      }
 
       var error;
       if (editId) {
@@ -290,22 +308,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
       if (error) {
         var errorMsg = 'Error al guardar el paciente';
-        
-        // Manejo de errores específicos - comprueba múltiples propiedades
-        if (error.code === '23505' || error.status === 409) {
-          errorMsg = 'Ya existe un paciente con esa cédula/ID. Por favor usa una diferente.';
+        if (error.code === '23505' || error.message && (error.message.includes('duplicate') || error.message.includes('unique'))) {
+          errorMsg = 'Ya existe un paciente con esa cédula/ID.';
         } else if (error.message) {
-          if (error.message.includes('duplicate') || error.message.includes('unique')) {
-            errorMsg = 'Ya existe un paciente con esa cédula/ID. Por favor usa una diferente.';
-          } else if (error.message.includes('not-jwt-token')) {
-            errorMsg = 'Sesión expirada. Por favor inicia sesión de nuevo.';
-          } else if (error.message.includes('invalid')) {
-            errorMsg = 'Datos inválidos. Por favor verifica los campos.';
-          } else {
-            errorMsg = error.message;
-          }
+          errorMsg = error.message;
         }
-        
         showToast('error', 'Error', errorMsg);
         return;
       }
@@ -317,12 +324,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-// ===== HISTORIAS MÉDICAS CON DOCUMENTOS =====
+// ===== HISTORIAS MÉDICAS =====
 async function searchMedicalRecords() {
   var query = document.getElementById('medicalRecordsSearch').value.toLowerCase();
   if (!query) {
-    document.getElementById('medicalRecordsContent').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Seleccione un paciente para ver su historial médico.</p>';
-    document.getElementById('patientDocumentsSection').style.display = 'none';
+    document.getElementById('medicalRecordsContent').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Busca un paciente para ver su historial médico.</p>';
     return;
   }
 
@@ -330,12 +336,11 @@ async function searchMedicalRecords() {
   if (!patients) return;
 
   var filtered = patients.filter(function(p) {
-    return (p.name + ' ' + p.lastname).toLowerCase().includes(query);
+    return (p.name + ' ' + p.lastname + ' ' + (p.patient_id || '')).toLowerCase().includes(query);
   });
 
   if (filtered.length === 0) {
     document.getElementById('medicalRecordsContent').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">No se encontraron pacientes.</p>';
-    document.getElementById('patientDocumentsSection').style.display = 'none';
     return;
   }
 

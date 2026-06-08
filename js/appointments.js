@@ -18,7 +18,7 @@ async function loadAppointments() {
     if (apt.date === today) todayCount++;
     var statusLabels = { scheduled: 'Programada', completed: 'Completada', cancelled: 'Cancelada', 'no-show': 'No asistió' };
     var statusClass = { scheduled: 'info', completed: 'success', cancelled: 'danger', 'no-show': 'warning' };
-    var typeLabels = { consultation: 'Consulta', follow_up: 'Seguimiento', followup: 'Seguimiento', emergency: 'Emergencia', checkup: 'Chequeo', procedure: 'Procedimiento', routine: 'Control' };
+    var typeLabels = { consultation: 'Consulta General', follow_up: 'Seguimiento', followup: 'Seguimiento', emergency: 'Emergencia', checkup: 'Chequeo', procedure: 'Procedimiento', routine: 'Control', pediatrics: 'Pediatría', cardiology: 'Cardiología', dermatology: 'Dermatología', gynecology: 'Ginecología', traumatology: 'Traumatología', ophthalmology: 'Oftalmología', neurology: 'Neurología', urology: 'Urología', psychiatry: 'Psiquiatría', endocrinology: 'Endocrinología', gastroenterology: 'Gastroenterología', pulmonology: 'Neumología', otolaryngology: 'Otorrinolaringología' };
     var row = '<tr>' +
       '<td>' + patientName + '</td>' +
       '<td>' + formatDate(apt.date) + '</td>' +
