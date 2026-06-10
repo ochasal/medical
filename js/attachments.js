@@ -177,31 +177,31 @@ async function downloadPatientDoc(filePath, fileName) {
 }
 
 async function deletePatientDoc(patientId, attachmentId, filePath) {
-  if (!confirm('¿Eliminar este documento?')) return;
+  showConfirm('Eliminar Documento', '¿Está seguro de eliminar este documento?', async function() {
+    try {
+      // Remove from storage
+      await db.storage.from('patient_documents').remove([filePath]);
 
-  try {
-    // Remove from storage
-    await db.storage.from('patient_documents').remove([filePath]);
+      // Remove from patient JSONB
+      var { data: patient } = await db.from('patients')
+        .select('attachments')
+        .eq('id', patientId)
+        .single();
 
-    // Remove from patient JSONB
-    var { data: patient } = await db.from('patients')
-      .select('attachments')
-      .eq('id', patientId)
-      .single();
+      var attachments = (patient && patient.attachments) ? patient.attachments : [];
+      attachments = attachments.filter(function(a) { return a.id !== attachmentId; });
 
-    var attachments = (patient && patient.attachments) ? patient.attachments : [];
-    attachments = attachments.filter(function(a) { return a.id !== attachmentId; });
+      await db.from('patients')
+        .update({ attachments: attachments })
+        .eq('id', patientId);
 
-    await db.from('patients')
-      .update({ attachments: attachments })
-      .eq('id', patientId);
-
-    showToast('success', 'Eliminado', 'Documento eliminado');
-    displayPatientAttachments(patientId, 'detailPatientDocuments');
-  } catch (err) {
-    console.error('Error deleting:', err);
-    showToast('error', 'Error', err.message);
-  }
+      showToast('success', 'Eliminado', 'Documento eliminado');
+      displayPatientAttachments(patientId, 'detailPatientDocuments');
+    } catch (err) {
+      console.error('Error deleting:', err);
+      showToast('error', 'Error', err.message);
+    }
+  });
 }
 
 function getFileIconByName(fileName) {
