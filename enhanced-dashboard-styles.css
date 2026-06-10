@@ -5111,9 +5111,10 @@ html {
     left: -280px;
     top: 0;
     height: 100vh;
-    z-index: 999;
+    z-index: 1001;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: none;
+    padding-top: 70px;
   }
 
   .sidebar.mobile-open {
@@ -5582,6 +5583,15 @@ html {
   display: flex;
   gap: 0.35rem;
   flex-wrap: nowrap;
+}
+
+/* Mobile action buttons - bigger touch targets */
+@media (max-width: 768px) {
+  .action-buttons .btn {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 0.4rem 0.6rem;
+  }
 }
 
 /* ===== DOCUMENTOS Y ARCHIVOS ADJUNTOS ===== */

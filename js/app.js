@@ -96,8 +96,8 @@ function showView(viewName) {
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('active');
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
 }
 
 function toggleUserMenu() {
@@ -119,7 +119,7 @@ function setupNavigation() {
       e.preventDefault();
       var viewName = this.getAttribute('data-view');
       if (viewName) showView(viewName);
-      if (window.innerWidth < 768) toggleSidebar();
+      if (window.innerWidth < 1024) toggleSidebar();
     });
   });
 }
