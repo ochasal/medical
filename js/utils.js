@@ -11,6 +11,18 @@ function formatDate(dateStr) {
   return day + '/' + month + '/' + year;
 }
 
+// Formato de hora: "14:30" → "2:30 PM"
+function formatTime(timeStr) {
+  if (!timeStr) return '-';
+  var parts = timeStr.substring(0, 5).split(':');
+  if (parts.length < 2) return timeStr;
+  var h = parseInt(parts[0], 10);
+  var m = parts[1];
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m + ' ' + ampm;
+}
+
 // Formato largo: 04 de junio de 2026
 function formatDateLong(dateStr) {
   if (!dateStr) return '-';

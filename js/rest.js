@@ -13,22 +13,64 @@ async function openNewRestModal() {
 }
 function closeRestModal() { document.getElementById('restModal').style.display = 'none'; }
 
-// Auto-calculate end date
+// ===== LÓGICA DE FECHAS Y DÍAS =====
+
+function _parseLocalDate(str) {
+  var p = str.split('-');
+  return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+}
+
+function _formatDate(d) {
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+
+function _clearRestDateError() {
+  var el = document.getElementById('restDateError');
+  if (el) el.textContent = '';
+}
+
+function _setRestDateError(msg) {
+  var el = document.getElementById('restDateError');
+  if (el) el.textContent = msg;
+}
+
+function _calcRestEndDate() {
+  _clearRestDateError();
+  var days = parseInt(document.getElementById('restDays').value);
+  var startVal = document.getElementById('restStartDate').value;
+  if (!days || days < 1 || !startVal) return;
+  var start = _parseLocalDate(startVal);
+  var end = new Date(start);
+  end.setDate(end.getDate() + days);
+  document.getElementById('restEndDate').value = _formatDate(end);
+}
+
+function _calcRestDays() {
+  _clearRestDateError();
+  var startVal = document.getElementById('restStartDate').value;
+  var endVal = document.getElementById('restEndDate').value;
+  if (!startVal || !endVal) return;
+  var start = _parseLocalDate(startVal);
+  var end = _parseLocalDate(endVal);
+  var diff = Math.round((end - start) / 86400000);
+  if (diff < 1) {
+    _setRestDateError('La fecha final debe ser posterior a la fecha inicial.');
+    document.getElementById('restDays').value = '';
+    return;
+  }
+  document.getElementById('restDays').value = diff;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  var daysInput = document.getElementById('restDays');
+  var daysInput  = document.getElementById('restDays');
   var startInput = document.getElementById('restStartDate');
-  if (daysInput && startInput) {
-    function calcEndDate() {
-      var days = parseInt(daysInput.value);
-      var start = startInput.value;
-      if (days && start) {
-        var end = new Date(start);
-        end.setDate(end.getDate() + days);
-        document.getElementById('restEndDate').value = end.toISOString().split('T')[0];
-      }
-    }
-    daysInput.addEventListener('input', calcEndDate);
-    startInput.addEventListener('change', calcEndDate);
+  var endInput   = document.getElementById('restEndDate');
+  if (daysInput && startInput && endInput) {
+    daysInput.addEventListener('input',  _calcRestEndDate);
+    startInput.addEventListener('change', _calcRestEndDate);
+    endInput.addEventListener('change', _calcRestDays);
   }
 });
 
@@ -106,12 +148,44 @@ document.addEventListener('DOMContentLoaded', function() {
   if (form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
+      _clearRestDateError();
+
+      var days     = parseInt(document.getElementById('restDays').value);
+      var startVal = document.getElementById('restStartDate').value;
+      var endVal   = document.getElementById('restEndDate').value;
+
+      // Validar coherencia entre días y fechas
+      if (startVal && endVal) {
+        var start = _parseLocalDate(startVal);
+        var end   = _parseLocalDate(endVal);
+        if (end <= start) {
+          _setRestDateError('La fecha final debe ser posterior a la fecha inicial.');
+          return;
+        }
+        var expectedDays = Math.round((end - start) / 86400000);
+        if (days && days !== expectedDays) {
+          _setRestDateError(
+            'Los días (' + days + ') no coinciden con las fechas (' + expectedDays + ' días entre ' +
+            startVal + ' y ' + endVal + '). Corrija uno de los dos.'
+          );
+          return;
+        }
+        // Si no hay días pero sí fechas, se calcula automáticamente
+        if (!days) days = expectedDays;
+      } else if (startVal && days) {
+        // Si no hay fecha final, la calculamos antes de guardar
+        var s = _parseLocalDate(startVal);
+        s.setDate(s.getDate() + days);
+        endVal = _formatDate(s);
+        document.getElementById('restEndDate').value = endVal;
+      }
+
       var editId = document.getElementById('restEditId').value;
       var data = {
         patient_id: document.getElementById('restPatient').value,
-        days: parseInt(document.getElementById('restDays').value),
-        start_date: document.getElementById('restStartDate').value,
-        end_date: document.getElementById('restEndDate').value || null,
+        days: days,
+        start_date: startVal,
+        end_date: endVal || null,
         diagnosis: document.getElementById('restDiagnosis').value,
         notes: document.getElementById('restNotes').value
       };

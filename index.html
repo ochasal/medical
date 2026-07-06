@@ -131,6 +131,7 @@
               <li><a href="#orders" class="nav-link" data-view="orders"><i class="fas fa-file-medical-alt"></i> Órdenes</a></li>
               <li><a href="#rest" class="nav-link" data-view="rest"><i class="fas fa-bed"></i> Reposos</a></li>
               <li><a href="#referrals" class="nav-link" data-view="referrals"><i class="fas fa-share-square"></i> Referencias</a></li>
+              <li><a href="#medical-reports" class="nav-link" data-view="medical-reports"><i class="fas fa-file-alt"></i> Informes Médicos</a></li>
           <li><a href="#treatment-plans" class="nav-link" data-view="treatment-plans"><i class="fas fa-tasks"></i> Planes de Tratamiento</a></li>
           <li><a href="#vital-signs" class="nav-link" data-view="vital-signs"><i class="fas fa-heartbeat"></i> Signos Vitales</a></li>
           <li><a href="#recurring-appointments" class="nav-link" data-view="recurring-appointments"><i class="fas fa-redo"></i> Citas Recurrentes</a></li>
@@ -263,7 +264,10 @@
       <div class="view-header">
         <h2>Gestión de Citas</h2>
         <div class="view-actions">
-          <button class="btn btn-primary" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Nueva Cita</button>
+          <span id="aptBulkCount" style="display:none;font-size:0.85rem;color:var(--text-secondary);align-self:center;"></span>
+          <button id="aptBulkDeleteBtn" class="btn btn-danger" onclick="deleteSelectedAppointments()" style="display:none;"><i class="fas fa-trash"></i> Eliminar seleccionadas</button>
+          <button id="aptBulkCancelBtn" class="btn btn-secondary" onclick="document.querySelectorAll('.apt-checkbox').forEach(function(c){c.checked=false;});document.getElementById('aptSelectAll').checked=false;updateBulkBar();" style="display:none;">Cancelar selección</button>
+<button class="btn btn-primary" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Nueva Cita</button>
           <button class="btn btn-secondary" onclick="refreshAppointments()"><i class="fas fa-sync-alt"></i> Actualizar</button>
         </div>
       </div>
@@ -283,11 +287,13 @@
           <input type="text" id="appointmentSearchField" placeholder="Nombre del paciente..." onkeyup="searchAppointments()" />
         </div>
       </div>
+
       <div class="table-container">
         <table class="enhanced-table" id="appointmentsTable">
           <thead>
             <tr>
               <th>Paciente</th><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Estado</th><th>Consultorio</th><th>Acciones</th>
+              <th style="width:36px;text-align:center;"><input type="checkbox" id="aptSelectAll" onchange="toggleAllAppointments(this)" title="Seleccionar todas" /></th>
             </tr>
           </thead>
           <tbody id="appointmentsTableBody"></tbody>
@@ -299,15 +305,18 @@
     <div id="medical-records-view" class="view">
       <div class="view-header">
         <h2>Historias Médicas</h2>
+        <div class="view-actions">
+          <button class="btn btn-secondary" onclick="loadAllMedicalRecords()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
       </div>
       <div class="filters-section">
         <div class="filter-group">
-          <label>Buscar paciente:</label>
-          <input type="text" id="medicalRecordsSearch" placeholder="Buscar paciente..." onkeyup="searchMedicalRecords()" />
+          <label>Filtrar:</label>
+          <input type="text" id="medicalRecordsSearch" placeholder="Paciente, diagnóstico, motivo..." oninput="searchMedicalRecords()" />
         </div>
       </div>
       <div id="medicalRecordsContent">
-        <p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Seleccione un paciente para ver su historial médico.</p>
+        <p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Cargando...</p>
       </div>
       <!-- Patient Documents Section -->
     </div>
@@ -536,6 +545,29 @@
       </div>
     </div>
 
+    <!-- Medical Reports View -->
+    <div id="medical-reports-view" class="view">
+      <div class="view-header">
+        <h2>Informes Médicos</h2>
+        <div class="view-actions">
+          <button class="btn btn-primary" onclick="openNewMedicalReportModal()"><i class="fas fa-plus"></i> Nuevo Informe</button>
+          <button class="btn btn-secondary" onclick="refreshMedicalReports()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="table">
+          <thead><tr>
+            <th>Paciente</th>
+            <th>N° Expediente</th>
+            <th>Fecha de Emisión</th>
+            <th>Motivo</th>
+            <th>Acciones</th>
+          </tr></thead>
+          <tbody id="mrTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Waiting List View -->
     <div id="waiting-list-view" class="view">
       <div class="view-header">
@@ -635,6 +667,60 @@
           </div>
         </div>
       </div>
+
+      <!-- Sincronización de Calendario -->
+      <div class="stats-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+        <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+          <h4 style="margin: 0;"><i class="fas fa-calendar-alt" style="color: var(--accent-color); margin-right: 0.5rem;"></i> Sincronización de Calendario</h4>
+          <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Genera tu enlace personal de calendario. Suscríbete <strong>una sola vez</strong> desde tu iPhone y las citas se actualizarán automáticamente sin ninguna acción adicional.</p>
+
+          <!-- Generar enlace -->
+          <div style="width: 100%; background: var(--bg-secondary); border-radius: var(--radius-md); padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <i class="fas fa-link" style="font-size: 1.2rem; color: var(--accent-color);"></i>
+              <strong>Tu enlace de calendario</strong>
+            </div>
+            <p style="margin: 0 0 0.75rem 0; color: var(--text-secondary); font-size: 0.85rem;">Haz clic en <strong>Generar</strong> para crear tu enlace. Luego toca <strong>Suscribirse desde iPhone</strong> — solo necesitas hacerlo una vez.</p>
+            <button id="calendarSetupBtn" class="btn btn-primary" onclick="setupCalendarSync()"><i class="fas fa-sync-alt"></i> Generar / Actualizar enlace</button>
+
+            <!-- URL (oculta hasta generar) -->
+            <div id="calendarUrlContainer" style="display:none; margin-top: 1rem;">
+              <p style="margin: 0 0 0.5rem 0; font-size: 0.82rem; color: var(--text-secondary);">Copia este enlace y ábrelo desde <strong>Safari en tu iPhone</strong>:</p>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <input id="calendarSubscribeUrl" type="text" readonly style="flex:1; min-width:0; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-secondary); font-size: 0.78rem;" />
+                <button class="btn btn-secondary" onclick="copyCalendarUrl()" title="Copiar enlace"><i class="fas fa-copy"></i> Copiar</button>
+              </div>
+              <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; align-items: center;">
+                <a id="calendarIphoneBtn" href="#" class="btn btn-success" style="text-decoration:none;">
+                  <i class="fab fa-apple"></i> Suscribirse (desde iPhone)
+                </a>
+                <a id="calendarVerifyBtn" href="#" target="_blank" class="btn btn-secondary" style="text-decoration:none;" title="Verificar que el archivo existe">
+                  <i class="fas fa-external-link-alt"></i> Verificar archivo
+                </a>
+                <button class="btn btn-secondary" onclick="downloadICS()"><i class="fas fa-download"></i> Descargar .ics</button>
+              </div>
+              <div style="margin-top: 0.75rem; padding: 0.65rem 0.9rem; background: #fef3c7; border-radius: var(--radius-md); font-size: 0.82rem; color: #92400e;">
+                <p style="margin: 0 0 0.3rem 0;"><strong><i class="fas fa-exclamation-triangle"></i> Importante:</strong> El botón <em>"Descargar .ics"</em> es solo una importación estática — <strong>no se actualiza</strong> cuando agregas nuevas citas.</p>
+                <p style="margin: 0;">Para sincronización automática debes usar el enlace <code>webcal://</code> de arriba: cópialo → en iPhone abre <strong>Safari</strong> → pega el enlace → toca <strong>Suscribirse</strong>. Después de eso, las nuevas citas aparecen solas en tu iPhone.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instrucciones -->
+          <div style="width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+            <p style="margin: 0 0 0.6rem 0; font-weight: 600; font-size: 0.9rem;"><i class="fas fa-info-circle" style="color: var(--accent-color);"></i> Pasos de configuración (solo la primera vez)</p>
+            <ol style="margin: 0 0 0.75rem 0; padding-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 2;">
+              <li>En <strong>Supabase → Storage</strong>, crea un bucket llamado <code>calendars</code> y márcalo como <strong>público</strong>.</li>
+              <li>Vuelve aquí y toca <strong>"Generar / Actualizar enlace"</strong>.</li>
+              <li>Toca <strong>"Suscribirse desde iPhone"</strong> y acepta en iOS.</li>
+            </ol>
+            <div style="padding: 0.65rem 0.9rem; background: var(--bg-secondary); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary);">
+              <strong><i class="fas fa-check-circle" style="color:#22c55e;"></i> Después de suscribirte:</strong> cada vez que agregues o canceles una cita, el calendario de tu iPhone se actualizará automáticamente (iOS sincroniza cada hora o puedes bajar para refrescar en la app Calendario).
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Consultation View -->
@@ -724,6 +810,23 @@
   </main>
 </div>
 
+<!-- Manage Consultation Types Modal -->
+<div id="manageTypesModal" class="modal">
+  <div class="modal-content" style="max-width:500px;">
+    <div class="modal-header">
+      <h3><i class="fas fa-list-alt"></i> Tipos de Consulta</h3>
+      <span class="close" onclick="closeManageTypesModal()">&times;</span>
+    </div>
+    <div class="modal-body" style="padding:1.5rem;">
+      <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;">
+        <input type="text" id="newTypeLabel" placeholder="Ej: Reumatología" style="flex:1;padding:0.6rem 0.75rem;border:1px solid var(--border-color);border-radius:var(--radius-md);font-size:0.9rem;background:var(--bg-primary);color:var(--text-primary);" />
+        <button type="button" class="btn btn-primary" onclick="addConsultationType()" style="white-space:nowrap;"><i class="fas fa-plus"></i> Agregar</button>
+      </div>
+      <div id="typesList" style="display:flex;flex-direction:column;gap:0.5rem;max-height:380px;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Schedule Appointment Modal -->
 <div id="scheduleModal" class="modal">
   <div class="modal-content" style="max-width: 600px;">
@@ -735,28 +838,20 @@
       <form id="scheduleForm" class="enhanced-form">
         <div class="form-grid">
           <div class="form-group"><label>Paciente *</label><select id="schedulePatient" required><option value="">Seleccionar</option></select></div>
-          <div class="form-group"><label>Fecha *</label><input type="date" id="scheduleDate" required /></div>
-          <div class="form-group"><label>Hora *</label><input type="time" id="scheduleTime" required /></div>
-          <div class="form-group"><label>Tipo</label>
-            <select id="scheduleType">
-              <option value="consultation">Consulta General</option>
-              <option value="followup">Seguimiento</option>
-              <option value="emergency">Emergencia</option>
-              <option value="routine">Control</option>
-              <option value="pediatrics">Pediatría</option>
-              <option value="cardiology">Cardiología</option>
-              <option value="dermatology">Dermatología</option>
-              <option value="gynecology">Ginecología</option>
-              <option value="traumatology">Traumatología</option>
-              <option value="ophthalmology">Oftalmología</option>
-              <option value="neurology">Neurología</option>
-              <option value="urology">Urología</option>
-              <option value="psychiatry">Psiquiatría</option>
-              <option value="endocrinology">Endocrinología</option>
-              <option value="gastroenterology">Gastroenterología</option>
-              <option value="pulmonology">Neumología</option>
-              <option value="otolaryngology">Otorrinolaringología</option>
-            </select>
+          <div class="form-group"><label>Fecha *</label><input type="date" id="scheduleDate" required onchange="_updateScheduleTimeMin()" /></div>
+          <div class="form-group">
+            <label>Hora *</label>
+            <input type="time" id="scheduleTime" required oninput="_validateScheduleTime()" onblur="_validateScheduleTime()" />
+            <span id="scheduleTimeError" style="display:none;color:var(--danger-color);font-size:0.8rem;margin-top:0.25rem;display:block;"></span>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;justify-content:space-between;">
+              Tipo
+              <button type="button" onclick="openManageTypesModal()" title="Gestionar tipos de consulta" style="background:none;border:none;cursor:pointer;color:var(--accent-color);font-size:0.85rem;padding:0;display:flex;align-items:center;gap:4px;">
+                <i class="fas fa-cog"></i> Gestionar
+              </button>
+            </label>
+            <select id="scheduleType"></select>
           </div>
           <div class="form-group"><label>Consultorio</label><select id="scheduleOffice"><option value="">Seleccionar</option></select></div>
           <div class="form-group" style="grid-column: 1 / -1"><label>Notas</label><textarea id="scheduleNotes" rows="2" placeholder="Notas..."></textarea></div>
@@ -783,7 +878,7 @@
         <div class="form-grid">
           <div class="form-group"><label>Nombre *</label><input type="text" id="patientName" required /></div>
           <div class="form-group"><label>Apellido *</label><input type="text" id="patientLastname" required /></div>
-          <div class="form-group"><label>Cédula/ID *</label><input type="text" id="patientIdInput" required /></div>
+          <div class="form-group"><label>Cédula/ID *</label><input type="text" id="patientIdInput" required inputmode="numeric" pattern="\d*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" /><span id="cedulaError" style="color:#f44336;font-size:0.8rem;margin-top:4px;display:none;"></span></div>
           <div class="form-group"><label>Fecha de Nacimiento</label><input type="date" id="patientBirthDate" /></div>
           <div class="form-group"><label>Género</label><select id="patientGender"><option value="">Seleccionar</option><option value="Masculino">Masculino</option><option value="Femenino">Femenino</option></select></div>
           <div class="form-group"><label>Tipo de Sangre</label><select id="patientBloodType"><option value="">Seleccionar</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
@@ -960,6 +1055,128 @@
   </div>
 </div>
 
+<!-- Medical Report Modal -->
+<div id="mrModal" class="modal">
+  <div class="modal-content" style="max-width:780px;">
+    <div class="modal-header">
+      <h3 id="mrModalTitle">Nuevo Informe Médico</h3>
+      <button class="modal-close" onclick="closeMedicalReportModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="mrForm">
+        <input type="hidden" id="mrEditId" />
+
+        <!-- Encabezado -->
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label>Paciente *</label>
+            <select id="mrPatient" required onchange="mrOnPatientChange()">
+              <option value="">Seleccionar paciente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de Emisión *</label>
+            <input type="date" id="mrDate" required />
+          </div>
+          <div class="form-group">
+            <label>N° Expediente / Historia Clínica</label>
+            <input type="text" id="mrReportNumber" placeholder="Ej. HC-00123" />
+          </div>
+        </div>
+
+        <!-- 1. Datos del Paciente (auto-rellenados) -->
+        <h4 style="margin:1.25rem 0 0.75rem;padding-top:1rem;border-top:1px solid var(--border-color);"><i class="fas fa-user" style="color:var(--accent-color);margin-right:0.4rem;"></i> 1. Datos del Paciente</h4>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label>Documento de Identidad</label>
+            <input type="text" id="mrPatientId" readonly style="background:var(--bg-secondary);" placeholder="Auto-completado" />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Nacimiento</label>
+            <input type="text" id="mrPatientDob" readonly style="background:var(--bg-secondary);" placeholder="Auto-completado" />
+          </div>
+          <div class="form-group">
+            <label>Edad (años)</label>
+            <input type="number" id="mrPatientAge" readonly style="background:var(--bg-secondary);" placeholder="Auto-completado" />
+          </div>
+          <div class="form-group">
+            <label>Género</label>
+            <input type="text" id="mrPatientGender" readonly style="background:var(--bg-secondary);" placeholder="Auto-completado" />
+          </div>
+          <div class="form-group">
+            <label>Teléfono de Contacto</label>
+            <input type="text" id="mrPatientPhone" readonly style="background:var(--bg-secondary);" placeholder="Auto-completado" />
+          </div>
+        </div>
+
+        <!-- 2. Motivo de la Consulta -->
+        <h4 style="margin:1.25rem 0 0.75rem;padding-top:1rem;border-top:1px solid var(--border-color);"><i class="fas fa-comment-medical" style="color:var(--accent-color);margin-right:0.4rem;"></i> 2. Motivo de la Consulta / Ingreso</h4>
+        <div class="form-group">
+          <textarea id="mrReason" rows="3" placeholder="Descripción del motivo por el cual el paciente acudió a la consulta..."></textarea>
+        </div>
+
+        <!-- 3. Antecedentes -->
+        <h4 style="margin:1.25rem 0 0.75rem;padding-top:1rem;border-top:1px solid var(--border-color);"><i class="fas fa-history" style="color:var(--accent-color);margin-right:0.4rem;"></i> 3. Antecedentes Relevantes</h4>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label>Antecedentes Médicos / Patológicos</label>
+            <textarea id="mrMedHistory" rows="3" placeholder="Enfermedades crónicas, condiciones previas..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Antecedentes Quirúrgicos</label>
+            <textarea id="mrSurgHistory" rows="3" placeholder="Cirugías previas y fechas aproximadas..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Alergias</label>
+            <textarea id="mrAllergies" rows="2" placeholder='Medicamentos, alimentos o "Niega Alergias"...'></textarea>
+          </div>
+          <div class="form-group">
+            <label>Tratamiento Habitual</label>
+            <textarea id="mrCurrentTreatment" rows="2" placeholder="Medicamentos que toma con regularidad..."></textarea>
+          </div>
+        </div>
+
+        <!-- 4. Resumen Clínico -->
+        <h4 style="margin:1.25rem 0 0.75rem;padding-top:1rem;border-top:1px solid var(--border-color);"><i class="fas fa-stethoscope" style="color:var(--accent-color);margin-right:0.4rem;"></i> 4. Resumen Clínico y Examen Físico</h4>
+        <div class="form-group">
+          <label>Evolución Clínica</label>
+          <textarea id="mrClinicalEvolution" rows="4" placeholder="Descripción del desarrollo de la enfermedad, hallazgos importantes, estado general del paciente..."></textarea>
+        </div>
+        <p style="font-weight:600;font-size:0.9rem;margin:0.5rem 0;">Signos Vitales:</p>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label>Presión Arterial</label>
+            <input type="text" id="mrBloodPressure" placeholder="Ej. 120/80 mmHg" />
+          </div>
+          <div class="form-group">
+            <label>Frecuencia Cardíaca</label>
+            <input type="text" id="mrHeartRate" placeholder="Ej. 75 lpm" />
+          </div>
+          <div class="form-group">
+            <label>Temperatura</label>
+            <input type="text" id="mrTemperature" placeholder="Ej. 36.5 °C" />
+          </div>
+          <div class="form-group">
+            <label>Saturación de Oxígeno</label>
+            <input type="text" id="mrOxygen" placeholder="Ej. 98%" />
+          </div>
+        </div>
+
+        <!-- 5. Estudios Complementarios -->
+        <h4 style="margin:1.25rem 0 0.75rem;padding-top:1rem;border-top:1px solid var(--border-color);"><i class="fas fa-flask" style="color:var(--accent-color);margin-right:0.4rem;"></i> 5. Estudios Complementarios</h4>
+        <div class="form-group">
+          <textarea id="mrStudies" rows="4" placeholder="Hallazgos de exámenes de laboratorio, radiografías, ecografías, tomografías..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeMedicalReportModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Informe</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Waiting List Modal -->
 <div id="waitingListModal" class="modal">
   <div class="modal-content" style="max-width: 500px;">
@@ -1048,6 +1265,7 @@
           <div class="form-group"><label>Días de reposo *</label><input type="number" id="restDays" required min="1" placeholder="Ej: 3" /></div>
           <div class="form-group"><label>Desde *</label><input type="date" id="restStartDate" required /></div>
           <div class="form-group"><label>Hasta</label><input type="date" id="restEndDate" /></div>
+          <div style="grid-column: 1 / -1; margin-top: -0.5rem;"><span id="restDateError" style="color: var(--danger-color); font-size: 0.82rem;"></span></div>
           <div class="form-group" style="grid-column: 1 / -1"><label>Diagnóstico *</label><input type="text" id="restDiagnosis" required placeholder="Diagnóstico que justifica el reposo" /></div>
           <div class="form-group" style="grid-column: 1 / -1"><label>Observaciones</label><textarea id="restNotes" rows="2" placeholder="Observaciones..."></textarea></div>
         </div>
@@ -1218,6 +1436,8 @@
 <script src="js/ai-automation.js"></script>
 <script src="js/offices.js"></script>
 <script src="js/profile.js"></script>
+<script src="js/calendar-sync.js"></script>
+<script src="js/medical-reports.js"></script>
 <script src="js/app.js"></script>
 
 <script>

@@ -23,7 +23,6 @@ async function loadAllPatients() {
       '<td><div class="action-buttons">' +
         '<button class="btn btn-sm btn-info" onclick="viewPatientDetail(\'' + patient.id + '\')"><i class="fas fa-eye"></i></button>' +
         '<button class="btn btn-sm btn-primary" onclick="editPatient(\'' + patient.id + '\')"><i class="fas fa-edit"></i></button>' +
-        '<button class="btn btn-sm btn-danger" onclick="deletePatient(\'' + patient.id + '\')"><i class="fas fa-trash"></i></button>' +
       '</div></td></tr>';
     tbody.innerHTML += row;
   });
@@ -33,6 +32,11 @@ function openNewPatientModal() {
   document.getElementById('patientModalTitle').textContent = 'Nuevo Paciente';
   document.getElementById('patientForm').reset();
   document.getElementById('editPatientId').value = '';
+  var err = document.getElementById('cedulaError');
+  if (err) { err.textContent = ''; err.style.display = 'none'; }
+  window.pendingPatientAttachments = [];
+  var container = document.getElementById('patientAttachmentsContainer');
+  if (container) container.innerHTML = '';
   document.getElementById('patientModal').style.display = 'block';
 }
 
@@ -54,26 +58,16 @@ async function editPatient(patientId) {
   document.getElementById('patientAllergies').value = patient.allergies || '';
   document.getElementById('patientMedications').value = patient.medications || '';
   document.getElementById('patientMedicalHistory').value = patient.medical_history || '';
+  var err = document.getElementById('cedulaError');
+  if (err) { err.textContent = ''; err.style.display = 'none'; }
   document.getElementById('patientModal').style.display = 'block';
-  
+
   // Cargar documentos del paciente
   setTimeout(function() {
     displayPatientAttachments(patientId, 'patientAttachmentsContainer');
   }, 100);
 }
 
-async function deletePatient(patientId) {
-  showConfirm('Eliminar Paciente', 'Esta acción no se puede deshacer.', async function() {
-    var { error } = await db.from('patients').delete().eq('id', patientId);
-    if (error) { 
-      var errorMsg = error.message || 'No se pudo eliminar';
-      showToast('error', 'Error', errorMsg); 
-      return; 
-    }
-    loadAllPatients();
-    showToast('success', 'Eliminado', 'Paciente eliminado correctamente');
-  });
-}
 
 function searchAllPatients() {
   var query = document.getElementById('patientSearchField').value.toLowerCase();
@@ -259,6 +253,14 @@ async function viewConsultationDetail(consultationId) {
 
 // Patient form submission
 document.addEventListener('DOMContentLoaded', function() {
+  var cedulaField = document.getElementById('patientIdInput');
+  if (cedulaField) {
+    cedulaField.addEventListener('input', function() {
+      var err = document.getElementById('cedulaError');
+      if (err) { err.textContent = ''; err.style.display = 'none'; }
+    });
+  }
+
   var patientForm = document.getElementById('patientForm');
   if (patientForm) {
     patientForm.addEventListener('submit', async function(e) {
@@ -266,9 +268,17 @@ document.addEventListener('DOMContentLoaded', function() {
       var editId = document.getElementById('editPatientId').value;
       var cedulaInput = document.getElementById('patientIdInput').value;
       
+      var cedulaErrorEl = document.getElementById('cedulaError');
+      function setCedulaError(msg) {
+        if (cedulaErrorEl) { cedulaErrorEl.textContent = msg; cedulaErrorEl.style.display = msg ? 'block' : 'none'; }
+      }
+      setCedulaError('');
+
       // Validar que cédula solo contenga números
       if (cedulaInput && !/^\d+$/.test(cedulaInput)) {
+        setCedulaError('La cédula solo puede contener números');
         showToast('error', 'Error', 'La cédula solo puede contener números');
+        document.getElementById('patientIdInput').focus();
         return;
       }
 
@@ -292,30 +302,57 @@ document.addEventListener('DOMContentLoaded', function() {
         var userId = getUserId();
         var { data: existing } = await db.from('patients').select('id').eq('user_id', userId).eq('patient_id', cedulaInput);
         if (existing && existing.length > 0) {
+          setCedulaError('Ya existe un paciente registrado con esta cédula');
           showToast('error', 'Error', 'Ya existe un paciente con la cédula ' + cedulaInput);
+          document.getElementById('patientIdInput').focus();
           return;
         }
       }
 
-      var error;
+      var error, newPatientId = null;
       if (editId) {
         ({ error } = await db.from('patients').update(patientData).eq('id', editId));
       } else {
         patientData.user_id = getUserId();
-        var result = await db.from('patients').insert(patientData);
+        var result = await db.from('patients').insert(patientData).select();
         error = result.error;
+        if (!error && result.data && result.data[0]) newPatientId = result.data[0].id;
       }
 
       if (error) {
         var errorMsg = 'Error al guardar el paciente';
-        if (error.code === '23505' || error.message && (error.message.includes('duplicate') || error.message.includes('unique'))) {
-          errorMsg = 'Ya existe un paciente con esa cédula/ID.';
+        var isCedulaDuplicate = error.code === '23505' || (error.message && (error.message.includes('duplicate') || error.message.includes('unique')));
+        if (isCedulaDuplicate) {
+          errorMsg = 'Ya existe un paciente registrado con esta cédula.';
+          setCedulaError('Ya existe un paciente registrado con esta cédula');
+          document.getElementById('patientIdInput').focus();
         } else if (error.message) {
           errorMsg = error.message;
         }
         showToast('error', 'Error', errorMsg);
         return;
       }
+
+      // Subir archivos encolados al crear un paciente nuevo
+      var pending = window.pendingPatientAttachments || [];
+      if (newPatientId && pending.length > 0) {
+        var userId = getUserId();
+        var uploadedAtts = [];
+        for (var j = 0; j < pending.length; j++) {
+          var item = pending[j];
+          var safeName = (Date.now() + j) + '_' + item.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+          var filePath = userId + '/patients/' + newPatientId + '/' + safeName;
+          var { error: upErr } = await db.storage.from('patient_documents').upload(filePath, item.file);
+          if (!upErr) {
+            uploadedAtts.push({ id: Date.now() + j, fileName: item.fileName, filePath: filePath, fileType: item.fileType, fileSize: item.fileSize, uploadedAt: new Date().toISOString() });
+          }
+        }
+        if (uploadedAtts.length > 0) {
+          await db.from('patients').update({ attachments: uploadedAtts }).eq('id', newPatientId);
+        }
+        window.pendingPatientAttachments = [];
+      }
+
       closePatientModal();
       loadAllPatients();
       showToast('success', 'Guardado', editId ? 'Paciente actualizado' : 'Paciente creado');
@@ -325,62 +362,154 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ===== HISTORIAS MÉDICAS =====
-async function searchMedicalRecords() {
-  var query = document.getElementById('medicalRecordsSearch').value.toLowerCase();
-  if (!query) {
-    document.getElementById('medicalRecordsContent').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Busca un paciente para ver su historial médico.</p>';
-    return;
+
+var _allMedicalRecords = [];
+var _medicalPatientsMap = {};
+
+async function loadAllMedicalRecords() {
+  var container = document.getElementById('medicalRecordsContent');
+  if (!container) return;
+
+  _allMedicalRecords = [];
+  _medicalPatientsMap = {};
+  container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-secondary);">Cargando historias médicas...</p>';
+
+  try {
+    // Paso 1: traer pacientes
+    var pResult = await db.from('patients').select('*').order('created_at', { ascending: false });
+
+    if (pResult.error) {
+      container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--danger-color);">Error pacientes: ' + pResult.error.message + '</p>';
+      return;
+    }
+
+    var patients = pResult.data || [];
+
+    if (patients.length === 0) {
+      container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-secondary);">No hay pacientes registrados en el sistema.</p>';
+      return;
+    }
+
+    // Paso 2: traer TODAS las consultas de la tabla sin filtro
+    // (RLS se encarga de devolver solo las del usuario actual)
+    var cResult = await db
+      .from('consultations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (cResult.error) {
+      container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--danger-color);">Error consultas: ' + cResult.error.message + '</p>';
+      return;
+    }
+
+    var consultations = cResult.data || [];
+
+    // Si no hay consultas, intentar filtrar por patient_id explícitamente
+    if (consultations.length === 0) {
+      var pMap2 = {};
+      patients.forEach(function(p) { pMap2[p.id] = p; _medicalPatientsMap[p.id] = p; });
+      var all2 = [];
+      for (var k = 0; k < patients.length; k++) {
+        var cr = await db.from('consultations').select('*').eq('patient_id', patients[k].id);
+        if (cr.data && cr.data.length) {
+          cr.data.forEach(function(c) { c._patient = pMap2[c.patient_id] || null; all2.push(c); });
+        }
+      }
+      if (all2.length === 0) {
+        container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-secondary);">Hay ' + patients.length + ' paciente(s) pero no se encontraron consultas registradas.</p>';
+        return;
+      }
+      all2.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+      _allMedicalRecords = all2;
+      renderMedicalRecordsList(_allMedicalRecords);
+      return;
+    }
+
+    // Unir consultas con datos de pacientes
+    var pMap = {};
+    patients.forEach(function(p) {
+      pMap[p.id] = p;
+      _medicalPatientsMap[p.id] = p;
+    });
+    consultations.forEach(function(c) { c._patient = pMap[c.patient_id] || null; });
+
+    _allMedicalRecords = consultations;
+
+    var searchEl = document.getElementById('medicalRecordsSearch');
+    if (searchEl && searchEl.value.trim()) {
+      _filterAndRender(searchEl.value);
+    } else {
+      renderMedicalRecordsList(_allMedicalRecords);
+    }
+
+  } catch (err) {
+    container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--danger-color);">Error inesperado: ' + (err.message || String(err)) + '</p>';
   }
-
-  var { data: patients } = await db.from('patients').select('*').order('name');
-  if (!patients) return;
-
-  var filtered = patients.filter(function(p) {
-    return (p.name + ' ' + p.lastname + ' ' + (p.patient_id || '')).toLowerCase().includes(query);
-  });
-
-  if (filtered.length === 0) {
-    document.getElementById('medicalRecordsContent').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">No se encontraron pacientes.</p>';
-    return;
-  }
-
-  var html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">';
-  filtered.forEach(function(patient) {
-    html += '<div class="stat-card" style="cursor: pointer; transition: all 0.3s ease;" onclick="viewPatientMedicalRecords(\'' + patient.id + '\', \'' + patient.name + ' ' + patient.lastname + '\');">' +
-      '<div class="profile-avatar"><i class="fas fa-user-circle"></i></div>' +
-      '<div><h4 style="margin: 0.5rem 0;">' + patient.name + ' ' + patient.lastname + '</h4>' +
-      '<p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">' + (patient.patient_id || 'Sin ID') + '</p>' +
-      '<p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: var(--accent-color);"><i class="fas fa-arrow-right"></i> Click para ver historial</p>' +
-      '</div></div>';
-  });
-  html += '</div>';
-  document.getElementById('medicalRecordsContent').innerHTML = html;
 }
 
-async function viewPatientMedicalRecords(patientId, patientName) {
-  window.currentPatientId = patientId;
-  
-  // Cargar historial de consultas
-  var { data: consultations } = await db.from('consultations').select('*').eq('patient_id', patientId).order('created_at', { ascending: false });
-  
-  var html = '<div style="padding: 1.5rem;"><h3>' + patientName + '</h3>';
-  html += '<h4 style="margin-top: 1.5rem;"><i class="fas fa-history"></i> Consultas Registradas</h4>';
-  
-  if (!consultations || consultations.length === 0) {
-    html += '<p style="color: var(--text-secondary); padding: 1rem;">Sin consultas registradas</p>';
-  } else {
-    html += '<div style="display: grid; gap: 1rem;">';
-    consultations.forEach(function(cons) {
-      var date = new Date(cons.created_at).toLocaleDateString('es-ES');
-      html += '<div class="stat-card" style="padding: 1rem; border-radius: 8px; background: #fafafa; cursor: pointer;" onclick="viewConsultationDetail(\'' + cons.id + '\')">' +
-        '<p style="margin: 0 0 0.5rem 0; font-weight: 500;"><i class="fas fa-stethoscope"></i> ' + date + '</p>' +
-        '<p style="margin: 0 0 0.25rem 0; font-size: 0.9rem; color: #666;"><strong>Diagnóstico:</strong> ' + (cons.diagnosis || 'N/A') + '</p>' +
-        (cons.symptoms ? '<p style="margin: 0; font-size: 0.9rem; color: #666;"><strong>Motivo:</strong> ' + cons.symptoms + '</p>' : '') +
-        '</div>';
-    });
-    html += '</div>';
+function renderMedicalRecordsList(records) {
+  var container = document.getElementById('medicalRecordsContent');
+  if (!container) return;
+
+  if (!records || records.length === 0) {
+    container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-secondary);">No hay historias médicas registradas.</p>';
+    return;
+  }
+
+  var html = '<div style="display:grid;gap:0.65rem;">';
+  for (var i = 0; i < records.length; i++) {
+    var cons = records[i];
+    var p = cons._patient || {};
+    var name = ((p.name || '') + ' ' + (p.lastname || '')).trim() || 'Paciente desconocido';
+    var cedula = p.patient_id ? ' &middot; ' + p.patient_id : '';
+    var date = new Date(cons.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    var dx = (cons.diagnosis || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '&mdash;';
+    var motivo = (cons.symptoms || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    html += '<div class="stat-card" onclick="viewConsultationDetail(\'' + cons.id + '\')" style="cursor:pointer;flex-direction:row;align-items:center;gap:1rem;padding:0.875rem 1rem;">' +
+      '<div style="min-width:42px;height:42px;background:var(--accent-gradient);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+        '<i class="fas fa-file-medical" style="color:white;font-size:1rem;"></i>' +
+      '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">' +
+          '<strong style="font-size:0.95rem;">' + name + '<span style="font-weight:400;color:var(--text-secondary);font-size:0.82rem;">' + cedula + '</span></strong>' +
+          '<span style="font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;">' + date + '</span>' +
+        '</div>' +
+        '<p style="margin:0.25rem 0 0 0;font-size:0.85rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+          '<strong style="color:var(--text-primary);">Dx:</strong> ' + dx +
+          (motivo ? ' &nbsp;&middot;&nbsp; <strong style="color:var(--text-primary);">Motivo:</strong> ' + motivo : '') +
+        '</p>' +
+      '</div>' +
+    '</div>';
   }
   html += '</div>';
-  
-  document.getElementById('medicalRecordsContent').innerHTML = html;
+  container.innerHTML = html;
+}
+
+function _filterAndRender(query) {
+  var q = (query || '').toLowerCase().trim();
+  if (!q) { renderMedicalRecordsList(_allMedicalRecords); return; }
+  var filtered = [];
+  for (var i = 0; i < _allMedicalRecords.length; i++) {
+    var c = _allMedicalRecords[i];
+    var p = c._patient || _medicalPatientsMap[c.patient_id] || {};
+    var haystack = [
+      p.name || '', p.lastname || '', p.patient_id || '',
+      c.diagnosis || '', c.secondary_diagnosis || '',
+      c.symptoms || '', c.treatment || '',
+      c.physical_exam || '', c.follow_up || ''
+    ].join(' ').toLowerCase();
+    if (haystack.indexOf(q) !== -1) filtered.push(c);
+  }
+  if (filtered.length === 0 && _allMedicalRecords.length > 0) {
+    var container = document.getElementById('medicalRecordsContent');
+    if (container) container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-secondary);">Sin resultados para "<strong>' + query + '</strong>".</p>';
+    return;
+  }
+  renderMedicalRecordsList(filtered);
+}
+
+function searchMedicalRecords() {
+  var input = document.getElementById('medicalRecordsSearch');
+  _filterAndRender(input ? input.value : '');
 }

@@ -91,8 +91,10 @@ function showView(viewName) {
   else if (viewName === 'vital-signs') refreshVitalSigns();
   else if (viewName === 'recurring-appointments') refreshRecurringAppointments();
   else if (viewName === 'waiting-list') refreshWaitingList();
+  else if (viewName === 'medical-reports') refreshMedicalReports();
+  else if (viewName === 'medical-records') loadAllMedicalRecords();
   else if (viewName === 'offices') loadOffices();
-  else if (viewName === 'user-profile') loadUserProfile();
+  else if (viewName === 'user-profile') { loadUserProfile(); if (typeof loadCalendarProfileSettings === 'function') loadCalendarProfileSettings(); }
 }
 
 function toggleSidebar() {
@@ -125,16 +127,92 @@ function setupNavigation() {
 }
 
 // ===== DASHBOARD =====
+
+var _chartAppointments = null;
+var _chartStatus = null;
+
 async function refreshDashboard() {
-  var { data: patients } = await db.from('patients').select('id');
+  var { data: patients }     = await db.from('patients').select('id');
   var { data: appointments } = await db.from('appointments').select('id, date, status');
-  var { data: prescriptions } = await db.from('prescriptions').select('id, status');
+  var { data: prescriptions} = await db.from('prescriptions').select('id, status');
+
+  // --- Contadores ---
   document.getElementById('totalPatients').textContent = patients ? patients.length : 0;
+
   var today = new Date().toISOString().split('T')[0];
-  var todayCount = appointments ? appointments.filter(function(a) { return a.date === today; }).length : 0;
+  var apts  = appointments || [];
+  var todayCount = apts.filter(function(a) { return a.date === today; }).length;
   document.getElementById('todayAppointments').textContent = todayCount;
-  var activeRx = prescriptions ? prescriptions.filter(function(p) { return p.status === 'active'; }).length : 0;
+
+  var activeRx = (prescriptions || []).filter(function(p) { return p.status === 'active'; }).length;
   document.getElementById('activePrescriptions').textContent = activeRx;
+
+  // --- Gráfica 1: Citas por Día (últimos 14 días) ---
+  var dayLabels = [], dayCounts = [];
+  var shortDays = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  for (var i = 13; i >= 0; i--) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    var iso  = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    var lbl  = shortDays[d.getDay()] + ' ' + d.getDate();
+    dayLabels.push(lbl);
+    dayCounts.push(apts.filter(function(a) { return a.date === iso; }).length);
+  }
+
+  var ctxA = document.getElementById('appointmentsChart');
+  if (ctxA) {
+    if (_chartAppointments) { _chartAppointments.destroy(); _chartAppointments = null; }
+    _chartAppointments = new Chart(ctxA, {
+      type: 'bar',
+      data: {
+        labels: dayLabels,
+        datasets: [{
+          label: 'Citas',
+          data: dayCounts,
+          backgroundColor: 'rgba(99,102,241,0.7)',
+          borderColor: 'rgba(99,102,241,1)',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+      }
+    });
+  }
+
+  // --- Gráfica 2: Estado de Citas ---
+  var statusMap = { scheduled: 0, completed: 0, cancelled: 0, 'no-show': 0 };
+  apts.forEach(function(a) {
+    if (statusMap[a.status] !== undefined) statusMap[a.status]++;
+    else statusMap.scheduled++;
+  });
+
+  var ctxS = document.getElementById('healthTrendsChart');
+  if (ctxS) {
+    if (_chartStatus) { _chartStatus.destroy(); _chartStatus = null; }
+    _chartStatus = new Chart(ctxS, {
+      type: 'doughnut',
+      data: {
+        labels: ['Programada', 'Completada', 'Cancelada', 'No asistió'],
+        datasets: [{
+          data: [statusMap.scheduled, statusMap.completed, statusMap.cancelled, statusMap['no-show']],
+          backgroundColor: ['#6366f1','#22c55e','#ef4444','#f59e0b'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } }
+        }
+      }
+    });
+  }
 }
 
 // ===== BACKUP (Legacy - data in Supabase) =====

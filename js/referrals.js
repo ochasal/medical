@@ -21,12 +21,13 @@ async function refreshReferrals() {
   tbody.innerHTML = '';
   (referrals || []).forEach(function(r) {
     var patient = r.patients || {};
-    var priorityClass = r.priority === 'urgent' ? 'danger' : 'info';
+    var priorityClass  = r.priority === 'urgent' ? 'danger' : 'info';
+    var priorityLabel  = r.priority === 'urgent' ? 'Urgente' : 'Normal';
     var row = '<tr><td>' + (patient.name || '') + ' ' + (patient.lastname || '') + '</td>' +
       '<td>' + (r.specialty || '').charAt(0).toUpperCase() + (r.specialty || '').slice(1) + '</td>' +
       '<td>' + (r.reason || '').substring(0, 50) + '</td>' +
       '<td>' + formatDate(r.date) + '</td>' +
-      '<td><span class="badge badge-' + priorityClass + '">' + (r.priority || 'normal') + '</span></td>' +
+      '<td><span class="badge badge-' + priorityClass + '">' + priorityLabel + '</span></td>' +
       '<td><div class="action-buttons">' +
         '<button class="btn btn-sm btn-primary" onclick="editReferral(\'' + r.id + '\')"><i class="fas fa-edit"></i></button>' +
         '<button class="btn btn-sm btn-info" onclick="viewReferral(\'' + r.id + '\')"><i class="fas fa-eye"></i></button>' +

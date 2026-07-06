@@ -4,6 +4,62 @@
 
 // ===== PATIENT DOCUMENTS =====
 
+window.pendingPatientAttachments = [];
+
+// Llamado desde el botón "Subir" del modal de paciente (nuevo y editar)
+async function handlePatientAttachmentUpload(file, patientId) {
+  if (!file) { showToast('error', 'Error', 'Selecciona un archivo primero'); return; }
+
+  if (patientId) {
+    // Modo edición: subir directo al storage y actualizar JSONB
+    showToast('info', 'Subiendo', 'Cargando archivo...');
+    try {
+      var userId   = getUserId();
+      var safeName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      var filePath = userId + '/patients/' + patientId + '/' + safeName;
+
+      var { error: uploadError } = await db.storage.from('patient_documents').upload(filePath, file);
+      if (uploadError) { showToast('error', 'Error al subir', uploadError.message); return; }
+
+      var { data: patient } = await db.from('patients').select('attachments').eq('id', patientId).single();
+      var atts = (patient && patient.attachments) ? patient.attachments : [];
+      atts.push({ id: Date.now(), fileName: file.name, filePath: filePath, fileType: file.type, fileSize: file.size, uploadedAt: new Date().toISOString() });
+
+      var { error: updateError } = await db.from('patients').update({ attachments: atts }).eq('id', patientId);
+      if (updateError) { showToast('error', 'Error al guardar', updateError.message); return; }
+
+      showToast('success', 'Listo', 'Documento agregado');
+      displayPatientAttachments(patientId, 'patientAttachmentsContainer');
+    } catch (err) { showToast('error', 'Error', err.message); }
+
+  } else {
+    // Modo creación: encolar el archivo, se sube al guardar el paciente
+    window.pendingPatientAttachments.push({ file: file, fileName: file.name, fileType: file.type, fileSize: file.size });
+    _renderPendingPatientAttachments();
+    showToast('info', 'En cola', 'Se subirá al guardar el paciente');
+  }
+}
+
+function _renderPendingPatientAttachments() {
+  var container = document.getElementById('patientAttachmentsContainer');
+  if (!container) return;
+  var list = window.pendingPatientAttachments;
+  if (!list || list.length === 0) { container.innerHTML = ''; return; }
+  container.innerHTML = list.map(function(item, i) {
+    return '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem;background:var(--bg-secondary);border-radius:6px;margin-bottom:0.5rem;">' +
+      '<span style="color:var(--accent-color);">' + getFileIconByName(item.fileName) + '</span>' +
+      '<span style="flex:1;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + item.fileName + '</span>' +
+      '<span style="font-size:0.72rem;color:var(--text-secondary);background:var(--bg-primary);padding:0.2rem 0.5rem;border-radius:4px;">Pendiente</span>' +
+      '<button type="button" onclick="removePendingPatientAttachment(' + i + ')" style="background:var(--danger-color);color:white;border:none;padding:0.3rem 0.5rem;border-radius:4px;cursor:pointer;"><i class="fas fa-times"></i></button>' +
+    '</div>';
+  }).join('');
+}
+
+function removePendingPatientAttachment(index) {
+  window.pendingPatientAttachments.splice(index, 1);
+  _renderPendingPatientAttachments();
+}
+
 async function uploadDocFromDetail() {
   var fileInput = document.getElementById('detailPatientFileInput');
   var file = fileInput.files[0];
