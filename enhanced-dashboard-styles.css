@@ -5945,3 +5945,24 @@ html {
 [data-theme="dark"] .enhanced-table td small {
   color: #9090a0;
 }
+
+/* ── Dark mode: tarjetas de resumen (Récipes, Planes, Pacientes) ── */
+[data-theme="dark"] .patients-summary .summary-card,
+[data-theme="dark"] .appointments-summary .summary-card {
+  background: rgba(35, 35, 45, 0.98);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .patients-summary .summary-card h4,
+[data-theme="dark"] .appointments-summary .summary-card h4 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .summary-stat {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+[data-theme="dark"] .summary-stat .stat-label {
+  color: #9090a0;
+}
