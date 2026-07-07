@@ -290,7 +290,11 @@ async function openScheduleModal() {
   document.getElementById('scheduleModal').style.display = 'block';
 }
 
-function closeScheduleModal() { document.getElementById('scheduleModal').style.display = 'none'; }
+function closeScheduleModal() {
+  document.getElementById('scheduleModal').style.display = 'none';
+  var typesModal = document.getElementById('manageTypesModal');
+  if (typesModal) typesModal.style.display = 'none';
+}
 
 async function cancelAppointment(id) {
   showConfirm('Cancelar Cita', '¿Desea cancelar esta cita?', async function() {
