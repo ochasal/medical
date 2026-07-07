@@ -135,7 +135,7 @@ async function loadAppointments() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Cargando...</td></tr>';
 
-  var { data: appointments, error } = await db.from('appointments').select('*, patients(name, lastname, patient_id, phone)').order('date', { ascending: false });
+  var { data: appointments, error } = await db.from('appointments').select('*, patients(name, lastname, patient_id, phone)').neq('status', 'deleted').order('date', { ascending: false });
   if (error) { console.error('Error loading appointments:', error); return; }
 
   tbody.innerHTML = '';
@@ -187,7 +187,7 @@ function updateBulkBar() {
 
 async function deleteAppointment(id) {
   showConfirm('Eliminar cita', '¿Eliminar esta cita permanentemente? Esta acción no se puede deshacer.', async function() {
-    var { error } = await db.from('appointments').delete().eq('id', id);
+    var { error } = await db.from('appointments').update({ status: 'deleted' }).eq('id', id);
     if (error) { showToast('error', 'Error', error.message); return; }
     if (typeof publishCalendar === 'function') publishCalendar();
     loadAppointments();
@@ -203,7 +203,7 @@ async function deleteSelectedAppointments() {
     'Eliminar citas',
     '¿Eliminar ' + ids.length + ' cita(s) seleccionada(s)? Esta acción no se puede deshacer.',
     async function() {
-      var { error } = await db.from('appointments').delete().in('id', ids);
+      var { error } = await db.from('appointments').update({ status: 'deleted' }).in('id', ids);
       if (error) { showToast('error', 'Error', error.message); return; }
       if (typeof publishCalendar === 'function') publishCalendar();
       loadAppointments();

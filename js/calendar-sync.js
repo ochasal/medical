@@ -10,7 +10,7 @@ function _calFileName() {
 async function _generateICSContent() {
   var { data: apts } = await db.from('appointments')
     .select('*, patients(name, lastname)')
-    .in('status', ['scheduled', 'completed'])
+    .in('status', ['scheduled', 'completed', 'cancelled', 'deleted'])
     .order('date', { ascending: true });
 
   var now = new Date();
@@ -46,7 +46,7 @@ async function _generateICSContent() {
 
     var desc = (apt.type ? 'Tipo: ' + apt.type : '') +
                (apt.notes ? '\\nNotas: ' + apt.notes : '');
-    var status = apt.status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED';
+    var status = (apt.status === 'cancelled' || apt.status === 'deleted') ? 'CANCELLED' : 'CONFIRMED';
 
     lines.push(
       'BEGIN:VEVENT',
