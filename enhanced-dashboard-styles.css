@@ -5902,3 +5902,46 @@ html {
     padding: 1rem;
   }
 }
+
+/* ── Correcciones de contraste para tema oscuro ──────────────── */
+[data-theme="dark"] .enhanced-table th {
+  background: var(--bg-secondary);
+  color: #ffffff;
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .enhanced-table td {
+  color: #e8e8e8;
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+[data-theme="dark"] .enhanced-table tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+[data-theme="dark"] .filters-section input,
+[data-theme="dark"] .filters-section select {
+  background: #3d3d3d;
+  color: #e8e8e8;
+  border-color: #555555;
+}
+
+[data-theme="dark"] .filter-group label {
+  color: #b0b0b0;
+}
+
+[data-theme="dark"] .view-header h2 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .table-container {
+  background: rgba(35,35,45,0.98);
+}
+
+[data-theme="dark"] .enhanced-table td strong {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .enhanced-table td small {
+  color: #9090a0;
+}
