@@ -131,10 +131,30 @@ function loadCalendarProfileSettings() {
   }
 }
 
+// ── Crear bucket automáticamente si no existe ────────────────
+async function ensureCalendarBucketExists() {
+  try {
+    var { data: buckets } = await db.storage.listBuckets();
+    var bucketExists = buckets && buckets.some(function(b) { return b.name === CALENDAR_BUCKET; });
+    
+    if (!bucketExists) {
+      await db.storage.createBucket(CALENDAR_BUCKET, { public: true });
+      console.log('Bucket "' + CALENDAR_BUCKET + '" creado automáticamente');
+    }
+    return true;
+  } catch(e) {
+    console.error('Error verificando bucket:', e);
+    return false;
+  }
+}
+
 // ── Configurar por primera vez ────────────────────────────────
 async function setupCalendarSync() {
   var btn = document.getElementById('calendarSetupBtn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...'; }
+
+  // Asegurar que el bucket existe
+  await ensureCalendarBucketExists();
 
   var url = await publishCalendar();
 
@@ -144,7 +164,7 @@ async function setupCalendarSync() {
     _showCalendarUrl(url);
     showToast('success', 'Listo', 'Enlace de calendario generado. Suscríbete desde tu iPhone.');
   } else {
-    showToast('error', 'Error', 'No se pudo generar el enlace. Verifica que el bucket "calendars" exista en Supabase Storage como público.');
+    showToast('error', 'Error', 'No se pudo generar el enlace de calendario. Intenta de nuevo.');
   }
 }
 
