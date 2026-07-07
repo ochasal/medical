@@ -680,42 +680,64 @@
               <i class="fas fa-link" style="font-size: 1.2rem; color: var(--accent-color);"></i>
               <strong>Tu enlace de calendario</strong>
             </div>
-            <p style="margin: 0 0 0.75rem 0; color: var(--text-secondary); font-size: 0.85rem;">Haz clic en <strong>Generar</strong> para crear tu enlace. Luego toca <strong>Suscribirse desde iPhone</strong> — solo necesitas hacerlo una vez.</p>
+            <p style="margin: 0 0 0.75rem 0; color: var(--text-secondary); font-size: 0.85rem;">Haz clic en <strong>Generar</strong> para crear tu enlace personal. Suscríbete <strong>una sola vez</strong> desde tu teléfono y las citas se actualizan solas.</p>
             <button id="calendarSetupBtn" class="btn btn-primary" onclick="setupCalendarSync()"><i class="fas fa-sync-alt"></i> Generar / Actualizar enlace</button>
 
             <!-- URL (oculta hasta generar) -->
             <div id="calendarUrlContainer" style="display:none; margin-top: 1rem;">
-              <p style="margin: 0 0 0.5rem 0; font-size: 0.82rem; color: var(--text-secondary);">Copia este enlace y ábrelo desde <strong>Safari en tu iPhone</strong>:</p>
+              <p style="margin: 0 0 0.5rem 0; font-size: 0.82rem; color: var(--text-secondary);">Tu enlace de calendario (cópialo y ábrelo desde tu teléfono):</p>
               <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <input id="calendarSubscribeUrl" type="text" readonly style="flex:1; min-width:0; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-secondary); font-size: 0.78rem;" />
                 <button class="btn btn-secondary" onclick="copyCalendarUrl()" title="Copiar enlace"><i class="fas fa-copy"></i> Copiar</button>
               </div>
-              <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; align-items: center;">
-                <a id="calendarIphoneBtn" href="#" class="btn btn-success" style="text-decoration:none;">
-                  <i class="fab fa-apple"></i> Suscribirse (desde iPhone)
+
+              <!-- Botones por plataforma -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.75rem;">
+                <a id="calendarIphoneBtn" href="#" class="btn btn-secondary" style="text-decoration:none; text-align:center;">
+                  <i class="fab fa-apple"></i> Suscribirse — iPhone
                 </a>
-                <a id="calendarVerifyBtn" href="#" target="_blank" class="btn btn-secondary" style="text-decoration:none;" title="Verificar que el archivo existe">
+                <a id="calendarAndroidBtn" href="https://calendar.google.com/calendar/r/settings/addbyurl" target="_blank" class="btn btn-secondary" onclick="copyCalendarHttpsUrl()" style="text-decoration:none; text-align:center;">
+                  <i class="fab fa-android"></i> Suscribirse — Android
+                </a>
+              </div>
+              <div style="display:flex; gap:0.5rem; margin-top:0.5rem; flex-wrap:wrap;">
+                <a id="calendarVerifyBtn" href="#" target="_blank" class="btn btn-secondary" style="text-decoration:none; font-size:0.82rem;" title="Verificar archivo">
                   <i class="fas fa-external-link-alt"></i> Verificar archivo
                 </a>
-                <button class="btn btn-secondary" onclick="downloadICS()"><i class="fas fa-download"></i> Descargar .ics</button>
-              </div>
-              <div style="margin-top: 0.75rem; padding: 0.65rem 0.9rem; background: #fef3c7; border-radius: var(--radius-md); font-size: 0.82rem; color: #92400e;">
-                <p style="margin: 0 0 0.3rem 0;"><strong><i class="fas fa-exclamation-triangle"></i> Importante:</strong> El botón <em>"Descargar .ics"</em> es solo una importación estática — <strong>no se actualiza</strong> cuando agregas nuevas citas.</p>
-                <p style="margin: 0;">Para sincronización automática debes usar el enlace <code>webcal://</code> de arriba: cópialo → en iPhone abre <strong>Safari</strong> → pega el enlace → toca <strong>Suscribirse</strong>. Después de eso, las nuevas citas aparecen solas en tu iPhone.</p>
+                <button class="btn btn-secondary" onclick="downloadICS()" style="font-size:0.82rem;"><i class="fas fa-download"></i> Descargar .ics</button>
               </div>
             </div>
           </div>
 
-          <!-- Instrucciones -->
+          <!-- Instrucciones por plataforma -->
           <div style="width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
-            <p style="margin: 0 0 0.6rem 0; font-weight: 600; font-size: 0.9rem;"><i class="fas fa-info-circle" style="color: var(--accent-color);"></i> Pasos de configuración (solo la primera vez)</p>
-            <ol style="margin: 0 0 0.75rem 0; padding-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 2;">
-              <li>Toca <strong>"Generar / Actualizar enlace"</strong>.</li>
-              <li>Toca <strong>"Suscribirse desde iPhone"</strong> y acepta en iOS.</li>
-              <li>¡Listo! Tu calendario estará sincronizado.</li>
-            </ol>
-            <div style="padding: 0.65rem 0.9rem; background: var(--bg-secondary); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-secondary);">
-              <strong><i class="fas fa-check-circle" style="color:#22c55e;"></i> Después de suscribirte:</strong> cada vez que agregues o canceles una cita, el calendario de tu iPhone se actualizará automáticamente (iOS sincroniza cada hora o puedes bajar para refrescar en la app Calendario).
+            <p style="margin: 0 0 0.75rem 0; font-weight: 600; font-size: 0.9rem;"><i class="fas fa-info-circle" style="color: var(--accent-color);"></i> Cómo suscribirte (una sola vez)</p>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+              <!-- iOS -->
+              <div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:0.75rem;">
+                <p style="margin:0 0 0.5rem 0; font-weight:600; font-size:0.85rem;"><i class="fab fa-apple"></i> iPhone (iOS)</p>
+                <ol style="margin:0; padding-left:1.1rem; color:var(--text-secondary); font-size:0.82rem; line-height:1.9;">
+                  <li>Toca <strong>Copiar</strong></li>
+                  <li>Abre <strong>Safari</strong> en tu iPhone</li>
+                  <li>Pega el enlace en la barra de dirección</li>
+                  <li>iOS pregunta <strong>"¿Suscribirse?"</strong> → Acepta</li>
+                </ol>
+              </div>
+              <!-- Android -->
+              <div style="background:var(--bg-secondary); border-radius:var(--radius-md); padding:0.75rem;">
+                <p style="margin:0 0 0.5rem 0; font-weight:600; font-size:0.85rem;"><i class="fab fa-android"></i> Android (Google Calendar)</p>
+                <ol style="margin:0; padding-left:1.1rem; color:var(--text-secondary); font-size:0.82rem; line-height:1.9;">
+                  <li>Toca <strong>Suscribirse — Android</strong> (copia el enlace automáticamente)</li>
+                  <li>Se abre Google Calendar en el navegador</li>
+                  <li>Pega el enlace en el campo <strong>"URL del calendario"</strong></li>
+                  <li>Toca <strong>"Agregar calendario"</strong></li>
+                </ol>
+              </div>
+            </div>
+
+            <div style="margin-top:0.75rem; padding:0.65rem 0.9rem; background:var(--bg-secondary); border-radius:var(--radius-md); font-size:0.82rem; color:var(--text-secondary);">
+              <strong><i class="fas fa-check-circle" style="color:#22c55e;"></i> Después de suscribirte:</strong> cada vez que crees o canceles una cita, el calendario de tu teléfono se actualiza automáticamente. Para verlo de inmediato abre la app Calendario y desliza hacia abajo para refrescar.
             </div>
           </div>
         </div>

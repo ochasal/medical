@@ -111,15 +111,34 @@ function getSavedCalendarUrl() {
 
 // ── Mostrar URL en Mi Perfil ──────────────────────────────────
 function _showCalendarUrl(url) {
-  var container  = document.getElementById('calendarUrlContainer');
-  var input      = document.getElementById('calendarSubscribeUrl');
-  var iphoneBtn  = document.getElementById('calendarIphoneBtn');
-  var verifyBtn  = document.getElementById('calendarVerifyBtn');
-  var webcalUrl  = url.replace(/^https?:\/\//, 'webcal://');
-  if (container) container.style.display = '';
-  if (input)     input.value = webcalUrl;           // mostrar webcal:// directamente
-  if (iphoneBtn) iphoneBtn.href = webcalUrl;
-  if (verifyBtn) verifyBtn.href = url;              // verificar con https://
+  var container   = document.getElementById('calendarUrlContainer');
+  var input       = document.getElementById('calendarSubscribeUrl');
+  var iphoneBtn   = document.getElementById('calendarIphoneBtn');
+  var androidBtn  = document.getElementById('calendarAndroidBtn');
+  var verifyBtn   = document.getElementById('calendarVerifyBtn');
+  var webcalUrl   = url.replace(/^https?:\/\//, 'webcal://');
+  if (container)  container.style.display = '';
+  if (input)      input.value = webcalUrl;
+  if (iphoneBtn)  iphoneBtn.href = webcalUrl;
+  if (verifyBtn)  verifyBtn.href = url;
+  // Android: guardar la URL https:// para copiarla al abrir Google Calendar
+  if (androidBtn) androidBtn.dataset.httpsUrl = url;
+}
+
+// Copia la URL https:// antes de abrir Google Calendar (para Android)
+function copyCalendarHttpsUrl() {
+  var btn = document.getElementById('calendarAndroidBtn');
+  var httpsUrl = btn ? btn.dataset.httpsUrl : '';
+  if (!httpsUrl) {
+    var input = document.getElementById('calendarSubscribeUrl');
+    httpsUrl = input ? input.value.replace(/^webcal:\/\//, 'https://') : '';
+  }
+  if (!httpsUrl) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(httpsUrl).then(function() {
+      showToast('info', 'Android', 'Enlace copiado — pégalo en Google Calendar');
+    });
+  }
 }
 
 function loadCalendarProfileSettings() {
@@ -131,30 +150,10 @@ function loadCalendarProfileSettings() {
   }
 }
 
-// ── Crear bucket automáticamente si no existe ────────────────
-async function ensureCalendarBucketExists() {
-  try {
-    var { data: buckets } = await db.storage.listBuckets();
-    var bucketExists = buckets && buckets.some(function(b) { return b.name === CALENDAR_BUCKET; });
-    
-    if (!bucketExists) {
-      await db.storage.createBucket(CALENDAR_BUCKET, { public: true });
-      console.log('Bucket "' + CALENDAR_BUCKET + '" creado automáticamente');
-    }
-    return true;
-  } catch(e) {
-    console.error('Error verificando bucket:', e);
-    return false;
-  }
-}
-
 // ── Configurar por primera vez ────────────────────────────────
 async function setupCalendarSync() {
   var btn = document.getElementById('calendarSetupBtn');
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...'; }
-
-  // Asegurar que el bucket existe
-  await ensureCalendarBucketExists();
 
   var url = await publishCalendar();
 
@@ -164,7 +163,7 @@ async function setupCalendarSync() {
     _showCalendarUrl(url);
     showToast('success', 'Listo', 'Enlace de calendario generado. Suscríbete desde tu iPhone.');
   } else {
-    showToast('error', 'Error', 'No se pudo generar el enlace de calendario. Intenta de nuevo.');
+    showToast('error', 'Error', 'No se pudo generar el enlace. Verifica que el bucket "calendars" exista en Supabase Storage como público.');
   }
 }
 
