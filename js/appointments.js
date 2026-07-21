@@ -170,6 +170,16 @@ function toggleAllAppointments(source) {}
 function updateBulkBar() {}
 async function deleteSelectedAppointments() {}
 
+async function deleteAppointment(id) {
+  showConfirm('Eliminar cita', '¿Eliminar esta cita permanentemente? Esta acción no se puede deshacer.', async function() {
+    var { error } = await db.from('appointments').update({ status: 'deleted' }).eq('id', id);
+    if (error) { showToast('error', 'Error', error.message); return; }
+    if (typeof publishCalendar === 'function') publishCalendar();
+    loadAppointments();
+    showToast('success', 'Eliminada', 'Cita eliminada');
+  });
+}
+
 function _todayISO() {
   var n = new Date();
   return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
