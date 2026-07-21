@@ -1,9 +1,30 @@
 // ===== CONSULTORIOS (Supabase) =====
 
+function _populateOfficeTimeSelects() {
+  ['officeStartTime', 'officeEndTime'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel || sel.options.length > 1) return;
+    for (var h = 0; h < 24; h++) {
+      [0, 30].forEach(function(m) {
+        var val    = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        var period = h < 12 ? 'AM' : 'PM';
+        var h12    = h % 12 || 12;
+        var label  = h12 + ':' + String(m).padStart(2, '0') + ' ' + period;
+        var opt    = document.createElement('option');
+        opt.value = val; opt.textContent = label;
+        sel.appendChild(opt);
+      });
+    }
+  });
+}
+
 function openNewOfficeModal() {
   document.getElementById('officeForm').reset();
   document.getElementById('officeEditId').value = '';
   document.getElementById('officeModalTitle').textContent = 'Nuevo Consultorio';
+  _populateOfficeTimeSelects();
+  document.getElementById('officeStartTime').value = '08:00';
+  document.getElementById('officeEndTime').value   = '17:00';
   document.getElementById('officeModal').style.display = 'block';
 }
 function closeOfficeModal() { document.getElementById('officeModal').style.display = 'none'; }
@@ -40,6 +61,7 @@ async function editOffice(id) {
   document.getElementById('officeName').value = office.name || '';
   document.getElementById('officePhone').value = office.phone || '';
   document.getElementById('officeAddress').value = office.address || '';
+  _populateOfficeTimeSelects();
   document.getElementById('officeStartTime').value = office.start_time || '08:00';
   document.getElementById('officeEndTime').value = office.end_time || '17:00';
   // Set days checkboxes
