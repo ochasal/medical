@@ -200,7 +200,21 @@ function _scheduleTimeError(msg) {
   el.style.display = msg ? 'block' : 'none';
 }
 
-function _populateTimeSelect() { /* no-op: scheduleTime is now <input type="time" step="1800"> */ }
+function _populateTimeSelect() {
+  var sel = document.getElementById('scheduleTime');
+  if (!sel || sel.options.length > 1) return;
+  for (var h = 0; h < 24; h++) {
+    [0, 30].forEach(function(m) {
+      var val    = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+      var period = h < 12 ? 'AM' : 'PM';
+      var h12    = h % 12 || 12;
+      var label  = h12 + ':' + String(m).padStart(2, '0') + ' ' + period;
+      var opt    = document.createElement('option');
+      opt.value = val; opt.textContent = label;
+      sel.appendChild(opt);
+    });
+  }
+}
 
 function _updateScheduleTimeMin() { _validateScheduleTime(); }
 
