@@ -160,7 +160,7 @@ async function loadAppointments() {
       '<td>' + (apt.office || '-') + '</td>' +
       '<td><div class="action-buttons">' +
         '<button class="btn btn-sm btn-success" title="Abrir consulta" onclick="openConsultation(\'' + apt.id + '\')"><i class="fas fa-stethoscope"></i></button>' +
-        '<button class="btn btn-sm btn-primary" title="Editar cita" onclick="editAppointment(\'' + apt.id + '\')"><i class="fas fa-edit"></i></button>' +
+        '<button class="btn btn-sm btn-info" title="Editar cita" onclick="editAppointment(\'' + apt.id + '\')"><i class="fas fa-edit"></i></button>' +
         (apt.status === 'scheduled' ? '<button class="btn btn-sm btn-warning" title="Cancelar cita" onclick="cancelAppointment(\'' + apt.id + '\')" style="color:#fff;"><i class="fas fa-ban"></i></button>' : '') +
         '<button class="btn btn-sm btn-danger" title="Eliminar cita" onclick="deleteAppointment(\'' + apt.id + '\')"><i class="fas fa-trash"></i></button>' +
       '</div></td></tr>';
@@ -200,19 +200,7 @@ function _scheduleTimeError(msg) {
   el.style.display = msg ? 'block' : 'none';
 }
 
-function _populateTimeSelect() {
-  var sel = document.getElementById('scheduleTime');
-  if (!sel || sel.options.length > 1) return;
-  for (var h = 0; h < 24; h++) {
-    ['00', '30'].forEach(function(m) {
-      var val = String(h).padStart(2, '0') + ':' + m;
-      var opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = val;
-      sel.appendChild(opt);
-    });
-  }
-}
+function _populateTimeSelect() { /* no-op: scheduleTime is now <input type="time" step="1800"> */ }
 
 function _updateScheduleTimeMin() { _validateScheduleTime(); }
 

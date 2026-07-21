@@ -860,9 +860,7 @@
           <div class="form-group"><label>Fecha *</label><input type="date" id="scheduleDate" required onchange="_updateScheduleTimeMin()" /></div>
           <div class="form-group">
             <label>Hora *</label>
-            <select id="scheduleTime" required onchange="_validateScheduleTime()">
-              <option value="">Seleccionar hora</option>
-            </select>
+            <input type="time" id="scheduleTime" required step="1800" oninput="_validateScheduleTime()" onblur="_validateScheduleTime()" />
             <span id="scheduleTimeError" style="display:none;color:var(--danger-color);font-size:0.8rem;margin-top:0.25rem;"></span>
           </div>
           <div class="form-group">
@@ -1375,8 +1373,8 @@
           <div class="form-group"><label>Nombre *</label><input type="text" id="officeName" required placeholder="Consultorio Centro Médico" /></div>
           <div class="form-group"><label>Teléfono</label><input type="tel" id="officePhone" /></div>
           <div class="form-group" style="grid-column: 1 / -1"><label>Dirección *</label><input type="text" id="officeAddress" required /></div>
-          <div class="form-group"><label>Hora Inicio</label><input type="time" id="officeStartTime" value="08:00" /></div>
-          <div class="form-group"><label>Hora Fin</label><input type="time" id="officeEndTime" value="17:00" /></div>
+          <div class="form-group"><label>Hora Inicio</label><input type="time" id="officeStartTime" value="08:00" step="1800" /></div>
+          <div class="form-group"><label>Hora Fin</label><input type="time" id="officeEndTime" value="17:00" step="1800" /></div>
         </div>
         <div style="margin: 1rem 0;">
           <label>Días de atención:</label>
