@@ -53,6 +53,8 @@ function populateScheduleTypeSelect(keepValue) {
 }
 
 function openManageTypesModal() {
+  // z-index mayor que scheduleModal (2000) para que aparezca encima
+  document.getElementById('manageTypesModal').style.zIndex = '3000';
   document.getElementById('newTypeLabel').value = '';
   renderTypesList();
   document.getElementById('manageTypesModal').style.display = 'block';
@@ -158,6 +160,7 @@ async function loadAppointments() {
       '<td>' + (apt.office || '-') + '</td>' +
       '<td><div class="action-buttons">' +
         '<button class="btn btn-sm btn-success" title="Abrir consulta" onclick="openConsultation(\'' + apt.id + '\')"><i class="fas fa-stethoscope"></i></button>' +
+        '<button class="btn btn-sm btn-primary" title="Editar cita" onclick="editAppointment(\'' + apt.id + '\')"><i class="fas fa-edit"></i></button>' +
         (apt.status === 'scheduled' ? '<button class="btn btn-sm btn-warning" title="Cancelar cita" onclick="cancelAppointment(\'' + apt.id + '\')" style="color:#fff;"><i class="fas fa-ban"></i></button>' : '') +
         '<button class="btn btn-sm btn-danger" title="Eliminar cita" onclick="deleteAppointment(\'' + apt.id + '\')"><i class="fas fa-trash"></i></button>' +
       '</div></td></tr>';
@@ -230,6 +233,23 @@ function _validateScheduleTime() {
   return true;
 }
 
+async function editAppointment(id) {
+  await openScheduleModal();
+  var { data: apt } = await db.from('appointments').select('*').eq('id', id).single();
+  if (!apt) return;
+  document.getElementById('scheduleEditId').value = id;
+  document.getElementById('scheduleModalTitle').textContent = 'Editar Cita';
+  document.getElementById('scheduleSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Guardar cambios';
+  document.getElementById('schedulePatient').value = apt.patient_id || '';
+  document.getElementById('scheduleDate').value = apt.date || '';
+  document.getElementById('scheduleDate').min = '';  // permitir fechas pasadas al editar
+  document.getElementById('scheduleTime').value = apt.time ? apt.time.substring(0, 5) : '';
+  document.getElementById('scheduleType').value = apt.type || '';
+  document.getElementById('scheduleOffice').value = apt.office || '';
+  document.getElementById('scheduleNotes').value = apt.notes || '';
+  _scheduleTimeError('');
+}
+
 async function openScheduleModal() {
   var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
   var select = document.getElementById('schedulePatient');
@@ -247,6 +267,9 @@ async function openScheduleModal() {
   });
 
   document.getElementById('scheduleForm').reset();
+  document.getElementById('scheduleEditId').value = '';
+  document.getElementById('scheduleModalTitle').textContent = 'Programar Cita';
+  document.getElementById('scheduleSubmitBtn').innerHTML = '<i class="fas fa-calendar-plus"></i> Programar';
   populateScheduleTypeSelect();
 
   // Bloquear fechas pasadas en el picker y limpiar errores
@@ -367,11 +390,12 @@ document.addEventListener('DOMContentLoaded', function() {
     scheduleForm.addEventListener('submit', async function(e) {
       e.preventDefault();
 
+      var editId  = document.getElementById('scheduleEditId').value;
       var dateVal = document.getElementById('scheduleDate').value;
       var timeVal = document.getElementById('scheduleTime').value;
 
-      // Validar fecha/hora pasada
-      if (!_validateScheduleTime()) {
+      // Validar hora pasada solo para citas nuevas
+      if (!editId && !_validateScheduleTime()) {
         showToast('error', 'Hora inválida', 'La hora seleccionada ya pasó. Elige una hora futura.');
         return;
       }
@@ -382,29 +406,36 @@ document.addEventListener('DOMContentLoaded', function() {
         time: timeVal,
         type: document.getElementById('scheduleType').value,
         office: document.getElementById('scheduleOffice').value,
-        notes: document.getElementById('scheduleNotes').value,
-        status: 'scheduled'
+        notes: document.getElementById('scheduleNotes').value
       };
-      var { data: inserted, error } = await db.from('appointments').insert(appointmentData).select('*, patients(name, lastname)');
-      if (error) {
-        var errorMsg = 'Error al programar la cita';
-        if (error.code === '23505' || error.message.includes('duplicate')) {
-          errorMsg = 'Ya existe una cita en esa fecha y hora';
-        } else if (error.message) {
-          errorMsg = error.message;
-        }
-        showToast('error', 'Error', errorMsg);
-        return;
-      }
-      closeScheduleModal();
-      loadAppointments();
-      showToast('success', 'Programada', 'Cita creada correctamente');
 
-      // Sincronizar con Google Calendar si está conectado
-      if (typeof syncAppointmentToCalendar === 'function' && inserted && inserted[0]) {
-        var newApt = inserted[0];
-        var p = newApt.patients || {};
-        syncAppointmentToCalendar(newApt, (p.name || '') + ' ' + (p.lastname || ''));
+      var error;
+      if (editId) {
+        ({ error } = await db.from('appointments').update(appointmentData).eq('id', editId));
+        if (error) { showToast('error', 'Error', error.message); return; }
+        closeScheduleModal();
+        loadAppointments();
+        if (typeof publishCalendar === 'function') publishCalendar();
+        showToast('success', 'Actualizada', 'Cita actualizada correctamente');
+      } else {
+        appointmentData.status = 'scheduled';
+        var inserted;
+        ({ data: inserted, error } = await db.from('appointments').insert(appointmentData).select('*, patients(name, lastname)'));
+        if (error) {
+          var errorMsg = 'Error al programar la cita';
+          if (error.code === '23505' || error.message.includes('duplicate')) errorMsg = 'Ya existe una cita en esa fecha y hora';
+          else if (error.message) errorMsg = error.message;
+          showToast('error', 'Error', errorMsg);
+          return;
+        }
+        closeScheduleModal();
+        loadAppointments();
+        showToast('success', 'Programada', 'Cita creada correctamente');
+        if (typeof syncAppointmentToCalendar === 'function' && inserted && inserted[0]) {
+          var newApt = inserted[0];
+          var p = newApt.patients || {};
+          syncAppointmentToCalendar(newApt, (p.name || '') + ' ' + (p.lastname || ''));
+        }
       }
     });
   }
