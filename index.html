@@ -264,10 +264,7 @@
       <div class="view-header">
         <h2>Gestión de Citas</h2>
         <div class="view-actions">
-          <span id="aptBulkCount" style="display:none;font-size:0.85rem;color:var(--text-secondary);align-self:center;"></span>
-          <button id="aptBulkDeleteBtn" class="btn btn-danger" onclick="deleteSelectedAppointments()" style="display:none;"><i class="fas fa-trash"></i> Eliminar seleccionadas</button>
-          <button id="aptBulkCancelBtn" class="btn btn-secondary" onclick="document.querySelectorAll('.apt-checkbox').forEach(function(c){c.checked=false;});document.getElementById('aptSelectAll').checked=false;updateBulkBar();" style="display:none;">Cancelar selección</button>
-<button class="btn btn-primary" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Nueva Cita</button>
+          <button class="btn btn-primary" onclick="openScheduleModal()"><i class="fas fa-plus"></i> Nueva Cita</button>
           <button class="btn btn-secondary" onclick="refreshAppointments()"><i class="fas fa-sync-alt"></i> Actualizar</button>
         </div>
       </div>
@@ -293,7 +290,6 @@
           <thead>
             <tr>
               <th>Paciente</th><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Estado</th><th>Consultorio</th><th>Acciones</th>
-              <th style="width:36px;text-align:center;"><input type="checkbox" id="aptSelectAll" onchange="toggleAllAppointments(this)" title="Seleccionar todas" /></th>
             </tr>
           </thead>
           <tbody id="appointmentsTableBody"></tbody>

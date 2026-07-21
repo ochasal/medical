@@ -160,57 +160,15 @@ async function loadAppointments() {
         '<button class="btn btn-sm btn-success" title="Abrir consulta" onclick="openConsultation(\'' + apt.id + '\')"><i class="fas fa-stethoscope"></i></button>' +
         (apt.status === 'scheduled' ? '<button class="btn btn-sm btn-warning" title="Cancelar cita" onclick="cancelAppointment(\'' + apt.id + '\')" style="color:#fff;"><i class="fas fa-ban"></i></button>' : '') +
         '<button class="btn btn-sm btn-danger" title="Eliminar cita" onclick="deleteAppointment(\'' + apt.id + '\')"><i class="fas fa-trash"></i></button>' +
-      '</div></td>' +
-      '<td style="text-align:center;"><input type="checkbox" class="apt-checkbox" value="' + apt.id + '" onchange="updateBulkBar()" /></td>' +
-      '</tr>';
+      '</div></td></tr>';
     tbody.innerHTML += row;
   });
   if (document.getElementById('todayAppointments')) document.getElementById('todayAppointments').textContent = todayCount;
-  updateBulkBar();
 }
 
-function toggleAllAppointments(source) {
-  document.querySelectorAll('.apt-checkbox').forEach(function(cb) { cb.checked = source.checked; });
-  updateBulkBar();
-}
-
-function updateBulkBar() {
-  var checked    = document.querySelectorAll('.apt-checkbox:checked');
-  var counter    = document.getElementById('aptBulkCount');
-  var deleteBtn  = document.getElementById('aptBulkDeleteBtn');
-  var cancelBtn  = document.getElementById('aptBulkCancelBtn');
-  var show       = checked.length > 0;
-  if (counter)   { counter.textContent = checked.length + ' cita' + (checked.length !== 1 ? 's' : '') + ' seleccionada' + (checked.length !== 1 ? 's' : ''); counter.style.display = show ? 'inline' : 'none'; }
-  if (deleteBtn) deleteBtn.style.display = show ? '' : 'none';
-  if (cancelBtn) cancelBtn.style.display = show ? '' : 'none';
-}
-
-async function deleteAppointment(id) {
-  showConfirm('Eliminar cita', '¿Eliminar esta cita permanentemente? Esta acción no se puede deshacer.', async function() {
-    var { error } = await db.from('appointments').update({ status: 'deleted' }).eq('id', id);
-    if (error) { showToast('error', 'Error', error.message); return; }
-    if (typeof publishCalendar === 'function') publishCalendar();
-    loadAppointments();
-    showToast('success', 'Eliminada', 'Cita eliminada');
-  });
-}
-
-async function deleteSelectedAppointments() {
-  var checked = document.querySelectorAll('.apt-checkbox:checked');
-  if (!checked.length) return;
-  var ids = Array.from(checked).map(function(cb) { return cb.value; });
-  showConfirm(
-    'Eliminar citas',
-    '¿Eliminar ' + ids.length + ' cita(s) seleccionada(s)? Esta acción no se puede deshacer.',
-    async function() {
-      var { error } = await db.from('appointments').update({ status: 'deleted' }).in('id', ids);
-      if (error) { showToast('error', 'Error', error.message); return; }
-      if (typeof publishCalendar === 'function') publishCalendar();
-      loadAppointments();
-      showToast('success', 'Eliminadas', ids.length + ' cita(s) eliminada(s)');
-    }
-  );
-}
+function toggleAllAppointments(source) {}
+function updateBulkBar() {}
+async function deleteSelectedAppointments() {}
 
 function _todayISO() {
   var n = new Date();
