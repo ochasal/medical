@@ -200,28 +200,31 @@ function _scheduleTimeError(msg) {
   el.style.display = msg ? 'block' : 'none';
 }
 
-function _updateScheduleTimeMin() {
-  var dateEl = document.getElementById('scheduleDate');
-  var timeEl = document.getElementById('scheduleTime');
-  if (!dateEl || !timeEl) return;
-  if (dateEl.value === _todayISO()) {
-    timeEl.min = _nowHHMM();
-  } else {
-    timeEl.min = '';
+function _populateTimeSelect() {
+  var sel = document.getElementById('scheduleTime');
+  if (!sel || sel.options.length > 1) return;
+  for (var h = 0; h < 24; h++) {
+    ['00', '30'].forEach(function(m) {
+      var val = String(h).padStart(2, '0') + ':' + m;
+      var opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      sel.appendChild(opt);
+    });
   }
-  if (timeEl.value) _validateScheduleTime();
 }
+
+function _updateScheduleTimeMin() { _validateScheduleTime(); }
 
 function _validateScheduleTime() {
   var dateEl = document.getElementById('scheduleDate');
   var timeEl = document.getElementById('scheduleTime');
   if (!dateEl || !timeEl || !dateEl.value || !timeEl.value) {
-    _scheduleTimeError('');
-    return true;
+    _scheduleTimeError(''); return true;
   }
-  var parts = dateEl.value.split('-');
+  var parts     = dateEl.value.split('-');
   var timeParts = timeEl.value.split(':');
-  var selected = new Date(
+  var selected  = new Date(
     parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]),
     parseInt(timeParts[0]), parseInt(timeParts[1]), 0
   );
@@ -242,7 +245,7 @@ async function editAppointment(id) {
   document.getElementById('scheduleSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Guardar cambios';
   document.getElementById('schedulePatient').value = apt.patient_id || '';
   document.getElementById('scheduleDate').value = apt.date || '';
-  document.getElementById('scheduleDate').min = '';  // permitir fechas pasadas al editar
+  document.getElementById('scheduleDate').min = '';
   document.getElementById('scheduleTime').value = apt.time ? apt.time.substring(0, 5) : '';
   document.getElementById('scheduleType').value = apt.type || '';
   document.getElementById('scheduleOffice').value = apt.office || '';
@@ -271,10 +274,9 @@ async function openScheduleModal() {
   document.getElementById('scheduleModalTitle').textContent = 'Programar Cita';
   document.getElementById('scheduleSubmitBtn').innerHTML = '<i class="fas fa-calendar-plus"></i> Programar';
   populateScheduleTypeSelect();
+  _populateTimeSelect();
 
-  // Bloquear fechas pasadas en el picker y limpiar errores
   document.getElementById('scheduleDate').min = _todayISO();
-  document.getElementById('scheduleTime').min = '';
   _scheduleTimeError('');
 
 

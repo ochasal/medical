@@ -860,8 +860,10 @@
           <div class="form-group"><label>Fecha *</label><input type="date" id="scheduleDate" required onchange="_updateScheduleTimeMin()" /></div>
           <div class="form-group">
             <label>Hora *</label>
-            <input type="time" id="scheduleTime" required oninput="_validateScheduleTime()" onblur="_validateScheduleTime()" />
-            <span id="scheduleTimeError" style="display:none;color:var(--danger-color);font-size:0.8rem;margin-top:0.25rem;display:block;"></span>
+            <select id="scheduleTime" required onchange="_validateScheduleTime()">
+              <option value="">Seleccionar hora</option>
+            </select>
+            <span id="scheduleTimeError" style="display:none;color:var(--danger-color);font-size:0.8rem;margin-top:0.25rem;"></span>
           </div>
           <div class="form-group">
             <label style="display:flex;align-items:center;justify-content:space-between;">
