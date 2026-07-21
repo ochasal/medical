@@ -41,8 +41,12 @@ function mrOnPatientChange() {
   var dob = opt.dataset.dob;
   document.getElementById('mrPatientDob').value = dob ? formatDate(dob) : '';
   if (dob) {
-    var diff = Date.now() - new Date(dob).getTime();
-    document.getElementById('mrPatientAge').value = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+    var today     = new Date();
+    var birth     = new Date(dob + 'T00:00:00'); // forzar hora local, no UTC
+    var age       = today.getFullYear() - birth.getFullYear();
+    var monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+    document.getElementById('mrPatientAge').value = age >= 0 ? age : '';
   } else {
     document.getElementById('mrPatientAge').value = '';
   }
