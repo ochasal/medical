@@ -1,5 +1,43 @@
 // ===== PACIENTES (Supabase) =====
 
+function _initBirthDateSelects() {
+  var dayEl  = document.getElementById('patientBirthDay');
+  var yearEl = document.getElementById('patientBirthYear');
+  if (!dayEl || !yearEl) return;
+  if (dayEl.options.length > 1) return; // ya inicializado
+  for (var d = 1; d <= 31; d++) {
+    var o = document.createElement('option');
+    o.value = String(d).padStart(2, '0');
+    o.textContent = d;
+    dayEl.appendChild(o);
+  }
+  var currentYear = new Date().getFullYear();
+  for (var y = currentYear; y >= 1920; y--) {
+    var o2 = document.createElement('option');
+    o2.value = y;
+    o2.textContent = y;
+    yearEl.appendChild(o2);
+  }
+}
+
+function _getBirthDate() {
+  var y = document.getElementById('patientBirthYear').value;
+  var m = document.getElementById('patientBirthMonth').value;
+  var d = document.getElementById('patientBirthDay').value;
+  return (y && m && d) ? y + '-' + m + '-' + d : null;
+}
+
+function _setBirthDate(dateStr) {
+  var y = document.getElementById('patientBirthYear');
+  var m = document.getElementById('patientBirthMonth');
+  var d = document.getElementById('patientBirthDay');
+  if (!dateStr) { if(y) y.value=''; if(m) m.value=''; if(d) d.value=''; return; }
+  var parts = dateStr.split('-');
+  if (y) y.value = parts[0] || '';
+  if (m) m.value = parts[1] || '';
+  if (d) d.value = parts[2] || '';
+}
+
 async function loadAllPatients() {
   var tbody = document.getElementById('patientsTableBody');
   if (!tbody) return;
@@ -32,6 +70,8 @@ function openNewPatientModal() {
   document.getElementById('patientModalTitle').textContent = 'Nuevo Paciente';
   document.getElementById('patientForm').reset();
   document.getElementById('editPatientId').value = '';
+  _initBirthDateSelects();
+  _setBirthDate(null);
   var err = document.getElementById('cedulaError');
   if (err) { err.textContent = ''; err.style.display = 'none'; }
   window.pendingPatientAttachments = [];
@@ -50,7 +90,8 @@ async function editPatient(patientId) {
   document.getElementById('patientName').value = patient.name || '';
   document.getElementById('patientLastname').value = patient.lastname || '';
   document.getElementById('patientIdInput').value = patient.patient_id || '';
-  document.getElementById('patientBirthDate').value = patient.birth_date || '';
+  _initBirthDateSelects();
+  _setBirthDate(patient.birth_date || null);
   document.getElementById('patientGender').value = patient.gender || '';
   document.getElementById('patientPhone').value = patient.phone || '';
   document.getElementById('patientEmail').value = patient.email || '';
@@ -286,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         name: document.getElementById('patientName').value,
         lastname: document.getElementById('patientLastname').value,
         patient_id: cedulaInput,
-        birth_date: document.getElementById('patientBirthDate').value || null,
+        birth_date: _getBirthDate(),
         gender: document.getElementById('patientGender').value,
         blood_type: document.getElementById('patientBloodType').value,
         phone: document.getElementById('patientPhone').value,
