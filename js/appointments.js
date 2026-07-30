@@ -302,7 +302,82 @@ async function cancelAppointment(id) {
     if (typeof publishCalendar === 'function') publishCalendar();
     loadAppointments();
     showToast('success', 'Cancelada', 'Cita cancelada');
+    _sendAppointmentNotification('cancelled', id);
   });
+}
+
+// ── Notificaciones WhatsApp ───────────────────────────────────────────────────
+
+function _fmtDateWA(d) {
+  if (!d) return '-';
+  var p = d.split('-');
+  var m = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return parseInt(p[2]) + ' de ' + m[parseInt(p[1]) - 1] + ' de ' + p[0];
+}
+
+function _fmtTimeWA(t) {
+  if (!t) return '-';
+  var hm = t.substring(0, 5).split(':');
+  var h = parseInt(hm[0]);
+  return (h % 12 || 12) + ':' + hm[1] + ' ' + (h < 12 ? 'AM' : 'PM');
+}
+
+async function _sendAppointmentNotification(eventType, aptId, oldDate, oldTime) {
+  try {
+    var { data: apt } = await db.from('appointments')
+      .select('date, time, office, status, patients(name, lastname, phone)')
+      .eq('id', aptId).single();
+    if (!apt) return;
+
+    var patient = apt.patients || {};
+    var phone = patient.phone;
+    if (!phone) return;
+
+    var uid = getUserId();
+    var doctorName = 'tu médico';
+    var officeName = 'el consultorio';
+
+    var results = await Promise.all([
+      db.from('doctors').select('first_name, last_name, specialty').eq('user_id', uid).single(),
+      apt.office ? db.from('offices').select('name').eq('id', apt.office).single() : Promise.resolve({ data: null })
+    ]);
+    var doctor = results[0].data;
+    var office = results[1].data;
+
+    if (doctor) doctorName = 'Dr. ' + (doctor.first_name || '') + ' ' + (doctor.last_name || '');
+    if (office) officeName = office.name;
+
+    var patientName = ((patient.name || '') + ' ' + (patient.lastname || '')).trim();
+    var saludo = patientName ? 'Hola *' + patientName + '*! ' : '';
+    var msg = '';
+
+    if (eventType === 'created') {
+      msg = '🏥 *Nueva cita programada*\n\n' + saludo + 'Tu cita ha sido programada:\n\n' +
+        '📅 Fecha: ' + _fmtDateWA(apt.date) + '\n' +
+        '🕘 Hora: ' + _fmtTimeWA(apt.time) + '\n' +
+        '👨‍⚕️ Doctor: ' + doctorName + '\n' +
+        '🏢 Consultorio: ' + officeName + '\n' +
+        '📌 Estado: Programada';
+    } else if (eventType === 'cancelled') {
+      msg = '⚠️ *Cita cancelada*\n\n' + saludo +
+        'Tu cita del *' + _fmtDateWA(apt.date) + '* a las *' + _fmtTimeWA(apt.time) + '* con ' + doctorName + ' ha sido *cancelada*.\n\n' +
+        'Por favor contacta a tu doctor para reprogramar. 📞';
+    } else if (eventType === 'rescheduled') {
+      msg = '🔄 *Cita reprogramada*\n\n' + saludo + 'Tu cita ha sido actualizada:\n\n' +
+        '📅 Nueva fecha: ' + _fmtDateWA(apt.date) + '\n' +
+        '🕘 Nueva hora: ' + _fmtTimeWA(apt.time) + '\n' +
+        '👨‍⚕️ Doctor: ' + doctorName + '\n' +
+        '🏢 Consultorio: ' + officeName;
+      if (oldDate || oldTime) {
+        msg += '\n\n_Fecha anterior: ' + _fmtDateWA(oldDate) + ' ' + _fmtTimeWA(oldTime) + '_';
+      }
+    }
+
+    if (!msg) return;
+    await db.functions.invoke('wa-notify', { body: { phone: phone, message: msg } });
+  } catch (e) {
+    console.warn('WA notification error:', e);
+  }
 }
 
 async function openConsultation(id) {
@@ -415,12 +490,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
       var error;
       if (editId) {
+        var oldApt = null;
+        var { data: oldFetch } = await db.from('appointments').select('date, time').eq('id', editId).single();
+        oldApt = oldFetch;
         ({ error } = await db.from('appointments').update(appointmentData).eq('id', editId));
         if (error) { showToast('error', 'Error', error.message); return; }
         closeScheduleModal();
         loadAppointments();
         if (typeof publishCalendar === 'function') publishCalendar();
         showToast('success', 'Actualizada', 'Cita actualizada correctamente');
+        if (oldApt && (oldApt.date !== dateVal || oldApt.time !== timeVal)) {
+          _sendAppointmentNotification('rescheduled', editId, oldApt.date, oldApt.time);
+        }
       } else {
         appointmentData.status = 'scheduled';
         var inserted;
@@ -435,10 +516,13 @@ document.addEventListener('DOMContentLoaded', function() {
         closeScheduleModal();
         loadAppointments();
         showToast('success', 'Programada', 'Cita creada correctamente');
-        if (typeof syncAppointmentToCalendar === 'function' && inserted && inserted[0]) {
-          var newApt = inserted[0];
-          var p = newApt.patients || {};
-          syncAppointmentToCalendar(newApt, (p.name || '') + ' ' + (p.lastname || ''));
+        if (inserted && inserted[0]) {
+          _sendAppointmentNotification('created', inserted[0].id);
+          if (typeof syncAppointmentToCalendar === 'function') {
+            var newApt = inserted[0];
+            var p = newApt.patients || {};
+            syncAppointmentToCalendar(newApt, (p.name || '') + ' ' + (p.lastname || ''));
+          }
         }
       }
     });
