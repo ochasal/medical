@@ -324,13 +324,16 @@ function _fmtTimeWA(t) {
 
 async function _sendAppointmentNotification(eventType, aptId, oldDate, oldTime) {
   try {
-    var { data: apt } = await db.from('appointments')
+    console.log('[WA] sendNotification called:', eventType, aptId);
+    var { data: apt, error: aptErr } = await db.from('appointments')
       .select('date, time, office, status, patients(name, lastname, phone)')
       .eq('id', aptId).single();
+    console.log('[WA] apt:', JSON.stringify(apt), 'err:', JSON.stringify(aptErr));
     if (!apt) return;
 
     var patient = apt.patients || {};
     var phone = patient.phone;
+    console.log('[WA] phone:', phone);
     if (!phone) return;
 
     var uid = getUserId();
@@ -373,10 +376,13 @@ async function _sendAppointmentNotification(eventType, aptId, oldDate, oldTime) 
       }
     }
 
+    console.log('[WA] msg:', msg ? 'ok' : 'empty', '| eventType:', eventType);
     if (!msg) return;
-    await db.functions.invoke('wa-notify', { body: { phone: phone, message: msg } });
+    console.log('[WA] calling wa-notify for phone:', phone);
+    var invokeResult = await db.functions.invoke('wa-notify', { body: { phone: phone, message: msg } });
+    console.log('[WA] invoke result:', JSON.stringify(invokeResult));
   } catch (e) {
-    console.warn('WA notification error:', e);
+    console.warn('[WA] notification error:', e);
   }
 }
 
@@ -499,6 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAppointments();
         if (typeof publishCalendar === 'function') publishCalendar();
         showToast('success', 'Actualizada', 'Cita actualizada correctamente');
+        console.log('[WA] oldApt:', JSON.stringify(oldApt), '| newDate:', dateVal, '| newTime:', timeVal);
         if (oldApt && (oldApt.date !== dateVal || oldApt.time !== timeVal)) {
           _sendAppointmentNotification('rescheduled', editId, oldApt.date, oldApt.time);
         }
