@@ -31,6 +31,14 @@ var _COUNTRIES = [
   'Zambia','Zimbabwe'
 ];
 
+function _updateProfileHeader() {
+  var first = (document.getElementById('doctorFirstName') || {}).value || '';
+  var last  = (document.getElementById('doctorLastName')  || {}).value || '';
+  var full  = [first, last].filter(Boolean).join(' ');
+  var el = document.getElementById('userProfileName');
+  if (el) el.textContent = full ? 'Dr ' + full : '-';
+}
+
 function _countryOptions(selected) {
   var val = selected || 'Venezuela';
   return _COUNTRIES.map(function(c) {
@@ -73,11 +81,11 @@ function displayDoctorProfile(doctor) {
     '<div class="form-grid">' +
       '<div class="form-group">' +
         '<label>Nombre *</label>' +
-        '<input type="text" id="doctorFirstName" value="' + (doctor.first_name || '') + '" placeholder="Nombre" />' +
+        '<input type="text" id="doctorFirstName" value="' + (doctor.first_name || '') + '" placeholder="Nombre" oninput="_updateProfileHeader()" />' +
       '</div>' +
       '<div class="form-group">' +
         '<label>Apellido *</label>' +
-        '<input type="text" id="doctorLastName" value="' + (doctor.last_name || '') + '" placeholder="Apellido" />' +
+        '<input type="text" id="doctorLastName" value="' + (doctor.last_name || '') + '" placeholder="Apellido" oninput="_updateProfileHeader()" />' +
       '</div>' +
       '<div class="form-group">' +
         '<label>Especialidad *</label>' +
