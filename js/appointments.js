@@ -202,17 +202,130 @@ function _scheduleTimeError(msg) {
 
 function _populateTimeSelect() {
   var sel = document.getElementById('scheduleTime');
-  if (!sel || sel.options.length > 1) return;
-  for (var h = 0; h < 24; h++) {
-    [0, 30].forEach(function(m) {
-      var val    = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-      var period = h < 12 ? 'AM' : 'PM';
-      var h12    = h % 12 || 12;
-      var label  = h12 + ':' + String(m).padStart(2, '0') + ' ' + period;
-      var opt    = document.createElement('option');
-      opt.value = val; opt.textContent = label;
-      sel.appendChild(opt);
-    });
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecciona una fecha</option>';
+  sel.disabled = true;
+}
+
+// ---- Slots dinámicos basados en horario del Dr. ----
+
+function _apptFmt12(min) {
+  var h24 = Math.floor(min / 60) % 24, m = min % 60;
+  var p = h24 >= 12 ? 'PM' : 'AM';
+  var h = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+  return h + ':' + (m < 10 ? '0' : '') + m + ' ' + p;
+}
+
+var _APPT_DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+function _generateDaySlots(schedule, dateStr) {
+  if (!schedule || !schedule.days) return null;
+  var date = new Date(dateStr + 'T12:00:00');
+  var dayKey = _APPT_DAY_KEYS[date.getDay()];
+  var dayConfig = schedule.days[dayKey];
+  if (!dayConfig || !dayConfig.active || !dayConfig.blocks || !dayConfig.blocks.length) return [];
+  var consultMin = parseInt(schedule.consultDuration) || 30;
+  var now = new Date();
+  var todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  var isToday = dateStr === todayStr;
+  var slots = [];
+  dayConfig.blocks.forEach(function(block) {
+    var t = block.s;
+    while (t + consultMin <= block.e) {
+      if (isToday) {
+        var sd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(t/60), t%60, 0);
+        if (sd <= now) { t += consultMin; continue; }
+      }
+      var h24 = Math.floor(t/60), m = t%60;
+      slots.push({ time: String(h24).padStart(2,'0') + ':' + String(m).padStart(2,'0'), label: _apptFmt12(t) });
+      t += consultMin;
+    }
+  });
+  return slots;
+}
+
+function _generateFallbackSlots(dateStr) {
+  var now = new Date();
+  var todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  var isToday = dateStr === todayStr;
+  var slots = [];
+  for (var t = 360; t <= 1260; t += 30) {
+    if (isToday) {
+      var sd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(t/60), t%60, 0);
+      if (sd <= now) continue;
+    }
+    var h24 = Math.floor(t/60), m = t%60;
+    slots.push({ time: String(h24).padStart(2,'0') + ':' + String(m).padStart(2,'0'), label: _apptFmt12(t) });
+  }
+  return slots;
+}
+
+async function _getBookedTimesForDate(dateStr) {
+  var editId = (document.getElementById('scheduleEditId') || {}).value || '';
+  var query = db.from('appointments').select('time').eq('date', dateStr)
+    .neq('status','deleted').neq('status','cancelled');
+  if (editId) query = query.neq('id', editId);
+  var { data } = await query;
+  if (!data) return [];
+  return data.map(function(a) { return a.time ? a.time.substring(0,5) : ''; }).filter(Boolean);
+}
+
+async function _populateScheduleSlots() {
+  var dateEl = document.getElementById('scheduleDate');
+  var timeEl = document.getElementById('scheduleTime');
+  if (!dateEl || !timeEl) return;
+  var dateStr = dateEl.value;
+  if (!dateStr) {
+    timeEl.innerHTML = '<option value="">Selecciona una fecha</option>';
+    timeEl.disabled = true;
+    return;
+  }
+  _scheduleConflictWarning('');
+  timeEl.innerHTML = '<option value="">Cargando horarios...</option>';
+  timeEl.disabled = true;
+
+  var schedule = null;
+  var user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+  if (user) {
+    var { data: doc } = await db.from('doctors').select('schedule').eq('user_id', user.id).single();
+    schedule = doc && doc.schedule ? doc.schedule : null;
+  }
+
+  var slots;
+  if (schedule) {
+    slots = _generateDaySlots(schedule, dateStr);
+    if (!slots || slots.length === 0) {
+      _scheduleConflictWarning('<i class="fas fa-info-circle"></i> No tienes horario de atención configurado para este día de la semana.');
+      slots = [];
+    }
+  } else {
+    slots = _generateFallbackSlots(dateStr);
+  }
+
+  if (!slots.length) {
+    timeEl.innerHTML = '<option value="">Sin horarios disponibles este día</option>';
+    timeEl.disabled = true;
+    return;
+  }
+
+  var booked = await _getBookedTimesForDate(dateStr);
+  var html = '<option value="">Seleccionar hora</option>';
+  var available = 0;
+  slots.forEach(function(slot) {
+    if (booked.indexOf(slot.time) !== -1) {
+      html += '<option disabled>' + slot.label + ' — Ocupado</option>';
+    } else {
+      html += '<option value="' + slot.time + '">' + slot.label + '</option>';
+      available++;
+    }
+  });
+
+  if (available === 0) {
+    timeEl.innerHTML = '<option value="">Todos los horarios están ocupados</option>';
+    timeEl.disabled = true;
+  } else {
+    timeEl.innerHTML = html;
+    timeEl.disabled = false;
   }
 }
 
@@ -253,7 +366,7 @@ async function _checkScheduleConflict() {
   }
 }
 
-function _updateScheduleTimeMin() { _validateScheduleTime(); _checkScheduleConflict(); }
+function _updateScheduleTimeMin() { _populateScheduleSlots(); }
 
 function _validateScheduleTime() {
   _checkScheduleConflict();
@@ -280,17 +393,33 @@ async function editAppointment(id) {
   await openScheduleModal();
   var { data: apt } = await db.from('appointments').select('*').eq('id', id).single();
   if (!apt) return;
+  // Set editId FIRST so slot population excludes this appointment from booked list
   document.getElementById('scheduleEditId').value = id;
   document.getElementById('scheduleModalTitle').textContent = 'Editar Cita';
   document.getElementById('scheduleSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Guardar cambios';
   document.getElementById('schedulePatient').value = apt.patient_id || '';
   document.getElementById('scheduleDate').value = apt.date || '';
   document.getElementById('scheduleDate').min = '';
-  document.getElementById('scheduleTime').value = apt.time ? apt.time.substring(0, 5) : '';
   document.getElementById('scheduleType').value = apt.type || '';
   document.getElementById('scheduleOffice').value = apt.office || '';
   document.getElementById('scheduleNotes').value = apt.notes || '';
   _scheduleTimeError('');
+  // Populate slots for the appointment's date, then restore its time
+  if (apt.date) {
+    await _populateScheduleSlots();
+    var timeEl = document.getElementById('scheduleTime');
+    var timeVal = apt.time ? apt.time.substring(0,5) : '';
+    timeEl.value = timeVal;
+    // If slot not found in options (e.g. schedule changed), add it
+    if (timeVal && !timeEl.value) {
+      var h = parseInt(timeVal.split(':')[0]), m = parseInt(timeVal.split(':')[1]);
+      var opt = document.createElement('option');
+      opt.value = timeVal;
+      opt.textContent = _apptFmt12(h * 60 + m) + ' (fuera de horario)';
+      timeEl.appendChild(opt);
+      timeEl.value = timeVal;
+    }
+  }
 }
 
 async function openScheduleModal() {
@@ -566,16 +695,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // Validar hora pasada solo para citas nuevas
       if (!editId && !_validateScheduleTime()) {
         showToast('error', 'Hora inválida', 'La hora seleccionada ya pasó. Elige una hora futura.');
-        return;
-      }
-
-      // Bloquear si hay conflicto de horario
-      var conflictEl = document.getElementById('scheduleConflictWarn');
-      if (conflictEl && conflictEl.style.display !== 'none') {
-        showToast('error', 'Horario ocupado', 'Ya existe una cita en esa fecha y hora. Por favor elige otro horario.');
-        conflictEl.style.animation = 'none';
-        conflictEl.offsetHeight;
-        conflictEl.style.animation = 'pulse 0.3s ease';
         return;
       }
 
