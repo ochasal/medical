@@ -100,6 +100,7 @@
             <small id="dropdownUserEmail">email@clinica.com</small>
           </div>
           <a href="#" onclick="showView('user-profile'); toggleUserMenu(); return false;"><i class="fas fa-user"></i> Mi Perfil</a>
+          <a href="#" onclick="openHelpModal(); toggleUserMenu(); return false;"><i class="fas fa-question-circle"></i> Ayuda</a>
           <a href="#" onclick="logout(); return false;" class="logout-link"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
         </div>
       </div>
@@ -1512,5 +1513,114 @@
 // Archivo principal cargado - toda la lógica está en los módulos js/
 console.log("Sistema Médico Avanzado - Cargado correctamente");
 </script>
+<!-- Help Modal -->
+<div id="helpModal" class="modal" style="z-index:3200;" onclick="if(event.target===this)closeHelpModal()">
+  <div class="modal-content" style="max-width:680px;max-height:88vh;overflow-y:auto;">
+    <div class="modal-header" style="position:sticky;top:0;z-index:1;">
+      <h3><i class="fas fa-question-circle"></i> Guía de uso</h3>
+      <span class="close" onclick="closeHelpModal()">&times;</span>
+    </div>
+    <div class="modal-body" style="padding:1.5rem;">
+
+      <div style="display:grid;gap:1.1rem;">
+
+        <!-- Dashboard -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid var(--accent-color);">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fas fa-tachometer-alt" style="color:var(--accent-color);font-size:1.1rem;"></i>
+            <strong>Inicio (Dashboard)</strong>
+          </div>
+          <p style="margin:0;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Resumen general del día: cantidad de citas programadas, pacientes registrados y actividad reciente. Es el punto de entrada cada vez que inicias sesión.</p>
+        </div>
+
+        <!-- Citas -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid #3b82f6;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fas fa-calendar-alt" style="color:#3b82f6;font-size:1.1rem;"></i>
+            <strong>Citas</strong>
+          </div>
+          <p style="margin:0 0 0.5rem;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Gestiona todas las citas médicas. Puedes programar, editar, cancelar o eliminar una cita.</p>
+          <ul style="margin:0;padding-left:1.2rem;font-size:0.85rem;color:var(--text-secondary);line-height:1.8;">
+            <li><strong>Programar:</strong> botón verde arriba a la derecha. Permite crear un paciente nuevo directamente desde el mismo formulario.</li>
+            <li><strong>Editar:</strong> ícono <i class="fas fa-edit"></i> en la fila — cambia fecha, hora, consultorio o tipo.</li>
+            <li><strong>Cancelar:</strong> ícono <i class="fas fa-ban"></i> — marca la cita como cancelada.</li>
+            <li><strong>Notificaciones:</strong> el paciente recibe un mensaje de WhatsApp automáticamente al crear, cancelar o reprogramar una cita.</li>
+          </ul>
+        </div>
+
+        <!-- Pacientes -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid #8b5cf6;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fas fa-users" style="color:#8b5cf6;font-size:1.1rem;"></i>
+            <strong>Pacientes</strong>
+          </div>
+          <p style="margin:0 0 0.5rem;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Registro completo de pacientes: datos personales, alergias, medicamentos actuales e historial clínico.</p>
+          <ul style="margin:0;padding-left:1.2rem;font-size:0.85rem;color:var(--text-secondary);line-height:1.8;">
+            <li>El ícono <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i> indica que faltan datos importantes (cédula, fecha de nacimiento o teléfono).</li>
+            <li>El ícono <i class="fas fa-eye"></i> abre el historial completo de consultas del paciente.</li>
+            <li>El ícono <i class="fas fa-edit"></i> permite editar su información.</li>
+          </ul>
+        </div>
+
+        <!-- Consultorios -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid #10b981;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fas fa-hospital" style="color:#10b981;font-size:1.1rem;"></i>
+            <strong>Consultorios</strong>
+          </div>
+          <p style="margin:0;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Define los lugares donde atiendes: nombre, dirección, teléfono, horario de atención y días de la semana. Los consultorios registrados aparecen como opciones al programar una cita.</p>
+        </div>
+
+        <!-- Consultas / Informe médico -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid #f59e0b;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fas fa-stethoscope" style="color:#f59e0b;font-size:1.1rem;"></i>
+            <strong>Informe médico (Consulta)</strong>
+          </div>
+          <p style="margin:0 0 0.5rem;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Se accede desde el ícono <i class="fas fa-stethoscope"></i> en la lista de citas. Permite registrar la consulta completa:</p>
+          <ul style="margin:0;padding-left:1.2rem;font-size:0.85rem;color:var(--text-secondary);line-height:1.8;">
+            <li>Signos vitales: presión arterial, frecuencia cardíaca, temperatura, peso.</li>
+            <li>Síntomas, examen físico, diagnóstico y tratamiento.</li>
+            <li>Al guardar, la cita pasa automáticamente al estado <strong>Completada</strong>.</li>
+          </ul>
+        </div>
+
+        <!-- Perfil -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid #6b7280;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fas fa-user-md" style="color:#6b7280;font-size:1.1rem;"></i>
+            <strong>Mi Perfil</strong>
+          </div>
+          <p style="margin:0;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Información profesional del médico: nombre, especialidad, número de licencia, institución y datos de contacto. Esta información aparece en los informes y recetas generadas.</p>
+        </div>
+
+        <!-- WhatsApp Bot -->
+        <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:1rem;border-left:4px solid #25d366;">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <i class="fab fa-whatsapp" style="color:#25d366;font-size:1.1rem;"></i>
+            <strong>Bot de WhatsApp</strong>
+          </div>
+          <p style="margin:0 0 0.5rem;font-size:0.88rem;color:var(--text-secondary);line-height:1.5;">Los pacientes pueden consultar sus citas escribiendo al número de WhatsApp configurado.</p>
+          <ul style="margin:0;padding-left:1.2rem;font-size:0.85rem;color:var(--text-secondary);line-height:1.8;">
+            <li>Escribe <strong>citas</strong> para acceder al menú de Citas Médicas.</li>
+            <li>Escribe <strong>menu</strong> o <strong>inicio</strong> para volver al inicio desde cualquier punto.</li>
+            <li>La sesión se cierra automáticamente tras 2 horas de inactividad.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="closeHelpModal()">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openHelpModal()  { document.getElementById('helpModal').style.display = 'block'; }
+function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+</script>
+
 </body>
 </html>
