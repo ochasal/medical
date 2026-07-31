@@ -17,6 +17,8 @@ async function loadUserProfile() {
   
   if (!error && doctor) {
     currentDoctorProfile = doctor;
+    var fullName = [doctor.first_name, doctor.last_name].filter(Boolean).join(' ');
+    if (nameEl && fullName) nameEl.textContent = 'Dr ' + fullName;
     displayDoctorProfile(doctor);
   } else {
     // Si no existe perfil, mostrar formulario vacío
@@ -154,6 +156,10 @@ async function saveDoctorProfile() {
     }
   }
   
+  var nameEl = document.getElementById('userProfileName');
+  if (nameEl && profileData.first_name) {
+    nameEl.textContent = 'Dr ' + profileData.first_name + ' ' + (profileData.last_name || '');
+  }
   showToast('success', 'Guardado', 'Perfil profesional actualizado');
   loadUserProfile();
 }
