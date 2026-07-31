@@ -51,8 +51,15 @@ async function loadAllPatients() {
 
   patients.forEach(function(patient) {
     var age = patient.birth_date ? Math.floor((new Date() - new Date(patient.birth_date)) / 31557600000) : 'N/A';
+    var missing = [];
+    if (!patient.patient_id) missing.push('Cédula');
+    if (!patient.birth_date) missing.push('Fecha de nacimiento');
+    if (!patient.phone)      missing.push('Teléfono');
+    var warnIcon = missing.length > 0
+      ? ' <i class="fas fa-exclamation-triangle" style="color:#f59e0b;font-size:0.8rem;cursor:default;" title="Perfil incompleto: ' + missing.join(', ') + '"></i>'
+      : '';
     var row = '<tr>' +
-      '<td>' + patient.name + ' ' + patient.lastname + '</td>' +
+      '<td>' + patient.name + ' ' + patient.lastname + warnIcon + '</td>' +
       '<td>' + (patient.patient_id || '') + '</td>' +
       '<td>' + age + '</td>' +
       '<td>' + (patient.phone || 'N/A') + '</td>' +
