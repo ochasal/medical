@@ -1515,12 +1515,12 @@ console.log("Sistema Médico Avanzado - Cargado correctamente");
 </script>
 <!-- Help Modal -->
 <div id="helpModal" class="modal" style="z-index:3200;" onclick="if(event.target===this)closeHelpModal()">
-  <div class="modal-content" style="max-width:680px;max-height:88vh;overflow-y:auto;">
-    <div class="modal-header" style="position:sticky;top:0;z-index:1;">
+  <div class="modal-content" style="max-width:680px;max-height:88vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
       <h3><i class="fas fa-question-circle"></i> Guía de uso</h3>
       <span class="close" onclick="closeHelpModal()">&times;</span>
     </div>
-    <div class="modal-body" style="padding:1.5rem;">
+    <div class="modal-body" style="padding:1.5rem;overflow-y:auto;flex:1;">
 
       <div style="display:grid;gap:1.1rem;">
 
