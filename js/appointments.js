@@ -216,9 +216,47 @@ function _populateTimeSelect() {
   }
 }
 
-function _updateScheduleTimeMin() { _validateScheduleTime(); }
+function _scheduleConflictWarning(msg) {
+  var el = document.getElementById('scheduleConflictWarn');
+  if (!el) return;
+  el.innerHTML = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
+async function _checkScheduleConflict() {
+  var dateEl   = document.getElementById('scheduleDate');
+  var timeEl   = document.getElementById('scheduleTime');
+  var editId   = document.getElementById('scheduleEditId').value;
+  if (!dateEl || !timeEl || !dateEl.value || !timeEl.value) {
+    _scheduleConflictWarning(''); return;
+  }
+  var timeVal = timeEl.value.substring(0, 5);
+  var query = db.from('appointments')
+    .select('id, patients(name, lastname)')
+    .eq('date', dateEl.value)
+    .like('time', timeVal + '%')
+    .neq('status', 'deleted')
+    .neq('status', 'cancelled');
+  if (editId) query = query.neq('id', editId);
+  var { data } = await query;
+  if (data && data.length > 0) {
+    var names = data.map(function(a) {
+      var p = a.patients || {};
+      return '<strong>' + (p.name || '') + ' ' + (p.lastname || '') + '</strong>';
+    }).join(', ');
+    _scheduleConflictWarning(
+      '<i class="fas fa-exclamation-triangle"></i> Ya existe' + (data.length > 1 ? 'n ' + data.length + ' citas' : ' una cita') +
+      ' a esta hora con: ' + names + '. Puedes continuar o elegir otra hora.'
+    );
+  } else {
+    _scheduleConflictWarning('');
+  }
+}
+
+function _updateScheduleTimeMin() { _validateScheduleTime(); _checkScheduleConflict(); }
 
 function _validateScheduleTime() {
+  _checkScheduleConflict();
   var dateEl = document.getElementById('scheduleDate');
   var timeEl = document.getElementById('scheduleTime');
   if (!dateEl || !timeEl || !dateEl.value || !timeEl.value) {
