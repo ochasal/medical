@@ -285,6 +285,52 @@ async function openScheduleModal() {
   document.getElementById('scheduleModal').style.display = 'block';
 }
 
+function openQuickPatientModal() {
+  ['qpName','qpLastname','qpPhone','qpId'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('quickPatientModal').style.display = 'block';
+  document.getElementById('qpName').focus();
+}
+
+function closeQuickPatientModal() {
+  document.getElementById('quickPatientModal').style.display = 'none';
+}
+
+async function saveQuickPatient() {
+  var name     = (document.getElementById('qpName').value || '').trim();
+  var lastname = (document.getElementById('qpLastname').value || '').trim();
+  var phone    = (document.getElementById('qpPhone').value || '').trim();
+  var patId    = (document.getElementById('qpId').value || '').trim();
+
+  if (!name || !lastname) {
+    showToast('error', 'Error', 'Nombre y Apellido son requeridos');
+    return;
+  }
+
+  var data = { name: name, lastname: lastname, user_id: getUserId() };
+  if (phone)  data.phone      = phone;
+  if (patId)  data.patient_id = patId;
+
+  var { data: inserted, error } = await db.from('patients').insert(data).select('id, name, lastname').single();
+  if (error) {
+    showToast('error', 'Error', error.message || 'No se pudo registrar el paciente');
+    return;
+  }
+
+  // Agregar la opción al select y seleccionarla
+  var select = document.getElementById('schedulePatient');
+  var opt = document.createElement('option');
+  opt.value = inserted.id;
+  opt.textContent = inserted.name + ' ' + inserted.lastname;
+  select.appendChild(opt);
+  select.value = inserted.id;
+
+  closeQuickPatientModal();
+  showToast('success', 'Registrado', name + ' ' + lastname + ' agregado correctamente');
+}
+
 function closeScheduleModal() {
   document.getElementById('scheduleModal').style.display = 'none';
   var typesModal = document.getElementById('manageTypesModal');
