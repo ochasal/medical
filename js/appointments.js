@@ -569,6 +569,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
+      // Bloquear si hay conflicto de horario
+      var conflictEl = document.getElementById('scheduleConflictWarn');
+      if (conflictEl && conflictEl.style.display !== 'none') {
+        showToast('error', 'Horario ocupado', 'Ya existe una cita en esa fecha y hora. Por favor elige otro horario.');
+        conflictEl.style.animation = 'none';
+        conflictEl.offsetHeight;
+        conflictEl.style.animation = 'pulse 0.3s ease';
+        return;
+      }
+
       var appointmentData = {
         patient_id: document.getElementById('schedulePatient').value,
         date: dateVal,
