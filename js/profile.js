@@ -242,9 +242,15 @@ function _sfInOther(min, blocks, excl) {
   return blocks.some(function(b, bi) { return bi !== excl && min >= b.s && min < b.e; });
 }
 
+function _sfStep() {
+  // Use consultation duration as step (capped at 15 min minimum for UX precision)
+  return Math.min(15, _schedState.consultDuration) || 15;
+}
+
 function _sfStartOpts(sel, blocks, excl) {
+  var step = _sfStep();
   var html = '';
-  for (var m = 300; m <= 1350; m += 30) {
+  for (var m = 300; m <= 1350; m += step) {
     if (!_sfInOther(m, blocks, excl))
       html += '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + _sf12(m) + '</option>';
   }
@@ -252,10 +258,11 @@ function _sfStartOpts(sel, blocks, excl) {
 }
 
 function _sfEndOpts(sel, startMin, blocks, excl) {
+  var step = _sfStep();
   var ceil = 1440;
   blocks.forEach(function(b, bi) { if (bi !== excl && b.s > startMin && b.s < ceil) ceil = b.s; });
   var html = '';
-  for (var m = 330; m <= 1380; m += 30) {
+  for (var m = 300 + step; m <= 1380; m += step) {
     if (m <= startMin || m > ceil) continue;
     html += '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + _sf12(m) + '</option>';
   }
@@ -355,7 +362,10 @@ function _sfUpdEnd(di, bi, v) {
 
 function _sfChangeDuration() {
   var sel = document.getElementById('schedConsultDuration');
-  if (sel) _schedState.consultDuration = parseInt(sel.value);
+  if (sel) {
+    _schedState.consultDuration = parseInt(sel.value) || 30;
+    _sfRenderDays(); // re-render blocks so Desde/Hasta use updated step
+  }
 }
 
 function _sfLoadJson(json) {
@@ -412,6 +422,9 @@ async function saveSchedule() {
     showToast('error', 'Error', 'Primero guarda tu perfil profesional antes de configurar horarios');
     return;
   }
+  // Always read duration from DOM to avoid stale state
+  var durSel = document.getElementById('schedConsultDuration');
+  if (durSel) _schedState.consultDuration = parseInt(durSel.value) || 30;
   var schedJson = _sfToJson();
   var { error } = await db.from('doctors').update({ schedule: schedJson }).eq('id', currentDoctorProfile.id);
   if (error) { showToast('error', 'Error', error.message || 'No se pudo guardar el horario'); return; }
