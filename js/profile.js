@@ -120,9 +120,9 @@ function displayDoctorProfile(doctor) {
         '<select id="doctorCountry">' + _countryOptions(doctor.country) + '</select>' +
       '</div>' +
     '</div>' +
-    '<div style="margin-top: 1rem;">' +
-      '<button class="btn btn-primary" onclick="saveDoctorProfile()" style="width: 100%;">' +
-        '<i class="fas fa-save"></i> Guardar Perfil Profesional' +
+    '<div style="margin-top:1rem;display:flex;justify-content:flex-end;">' +
+      '<button class="btn btn-primary" onclick="saveDoctorProfile()">' +
+        '<i class="fas fa-save"></i> Guardar' +
       '</button>' +
     '</div>' +
   '</div>';
