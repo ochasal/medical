@@ -1391,33 +1391,33 @@
 
 <!-- Office Modal -->
 <div id="officeModal" class="modal">
-  <div class="modal-content" style="max-width: 600px;">
+  <div class="modal-content" style="max-width:540px;">
     <div class="modal-header">
       <h3 id="officeModalTitle">Nuevo Consultorio</h3>
       <span class="close" onclick="closeOfficeModal()">&times;</span>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="padding:1.25rem 1.5rem 1rem;">
       <form id="officeForm" class="enhanced-form">
         <input type="hidden" id="officeEditId" />
-        <div class="form-grid">
-          <div class="form-group"><label>Nombre *</label><input type="text" id="officeName" required placeholder="Consultorio Centro Médico" /></div>
-          <div class="form-group"><label>Teléfono</label><input type="tel" id="officePhone" /></div>
-          <div class="form-group" style="grid-column: 1 / -1"><label>Dirección *</label><input type="text" id="officeAddress" required /></div>
-          <div class="form-group"><label>Hora Inicio</label><select id="officeStartTime"><option value="">Seleccionar</option></select></div>
-          <div class="form-group"><label>Hora Fin</label><select id="officeEndTime"><option value="">Seleccionar</option></select></div>
-        </div>
-        <div style="margin: 1rem 0;">
-          <label>Días de atención:</label>
-          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
-            <label><input type="checkbox" value="lunes" class="officeDay" checked> Lun</label>
-            <label><input type="checkbox" value="martes" class="officeDay" checked> Mar</label>
-            <label><input type="checkbox" value="miercoles" class="officeDay" checked> Mié</label>
-            <label><input type="checkbox" value="jueves" class="officeDay" checked> Jue</label>
-            <label><input type="checkbox" value="viernes" class="officeDay" checked> Vie</label>
-            <label><input type="checkbox" value="sabado" class="officeDay"> Sáb</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group" style="margin:0"><label>Nombre *</label><input type="text" id="officeName" required placeholder="Consultorio Centro Médico" /></div>
+          <div class="form-group" style="margin:0"><label>Teléfono</label><input type="tel" id="officePhone" /></div>
+          <div class="form-group" style="margin:0;grid-column:1/-1"><label>Dirección</label><input type="text" id="officeAddress" /></div>
+          <div class="form-group" style="margin:0"><label>Hora Inicio</label><select id="officeStartTime"><option value="">Seleccionar</option></select></div>
+          <div class="form-group" style="margin:0"><label>Hora Fin</label><select id="officeEndTime"><option value="">Seleccionar</option></select></div>
+          <div style="grid-column:1/-1;margin-top:0.25rem;">
+            <label style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:0.4rem;">Días de atención</label>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.9rem;"><input type="checkbox" value="lunes" class="officeDay" checked> Lun</label>
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.9rem;"><input type="checkbox" value="martes" class="officeDay" checked> Mar</label>
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.9rem;"><input type="checkbox" value="miercoles" class="officeDay" checked> Mié</label>
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.9rem;"><input type="checkbox" value="jueves" class="officeDay" checked> Jue</label>
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.9rem;"><input type="checkbox" value="viernes" class="officeDay" checked> Vie</label>
+              <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.9rem;"><input type="checkbox" value="sabado" class="officeDay"> Sáb</label>
+            </div>
           </div>
         </div>
-        <div class="form-actions">
+        <div class="form-actions" style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border-color);">
           <button type="button" class="btn btn-secondary" onclick="closeOfficeModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar</button>
         </div>
