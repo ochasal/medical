@@ -243,8 +243,7 @@ function _sfInOther(min, blocks, excl) {
 }
 
 function _sfStep() {
-  // Use consultation duration as step (capped at 15 min minimum for UX precision)
-  return Math.min(15, _schedState.consultDuration) || 15;
+  return _schedState.consultDuration || 15;
 }
 
 function _sfStartOpts(sel, blocks, excl) {
