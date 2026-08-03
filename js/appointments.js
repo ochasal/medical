@@ -424,6 +424,7 @@ async function editAppointment(id) {
 
 /* ─── PATIENT SEARCH PANEL ─── */
 var _apptAllPatients = [];
+var _apptRecentPtIds = [];
 var _PT_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#EF4444','#6366F1','#0EA5E9','#F97316','#14B8A6'];
 function _apptPtColor(id) { return _PT_COLORS[Math.abs(parseInt(String(id).replace(/\D/g,'').slice(-4)||0)) % _PT_COLORS.length]; }
 function _apptPtInitials(p) { return ((p.name||'')[0]||'').toUpperCase() + ((p.lastname||'')[0]||'').toUpperCase(); }
@@ -432,6 +433,19 @@ function _apptPtHighlight(text, q) {
   if (!q) return text;
   var esc = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   return text.replace(new RegExp('(' + esc + ')', 'gi'), '<mark style="background:#FEF08A;color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+}
+function _apptFmtLastVisit(dateStr) {
+  if (!dateStr) return '';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var d = new Date(dateStr + 'T12:00:00');
+  var diff = Math.round((today - d) / 86400000);
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  if (diff <  7) return 'Hace ' + diff + ' días';
+  if (diff < 14) return 'Hace 1 semana';
+  if (diff < 30) return 'Hace ' + Math.floor(diff/7) + ' semanas';
+  if (diff < 60) return 'Hace 1 mes';
+  return 'Hace ' + Math.floor(diff/30) + ' meses';
 }
 function _apptPtFilter(q) {
   var t = q.toLowerCase();
@@ -442,22 +456,23 @@ function _apptPtFilter(q) {
   });
 }
 function _apptPtGetRecent() {
-  var ids = JSON.parse(localStorage.getItem('_apptRecentPts') || '[]');
-  return ids.map(function(id) { return _apptAllPatients.find(function(p) { return p.id === id; }); }).filter(Boolean);
+  return _apptRecentPtIds
+    .map(function(id) { return _apptAllPatients.find(function(p) { return p.id === id; }); })
+    .filter(Boolean);
 }
 function _apptPtSaveRecent(id) {
-  var ids = JSON.parse(localStorage.getItem('_apptRecentPts') || '[]');
-  ids = [id].concat(ids.filter(function(x) { return x !== id; })).slice(0,3);
-  localStorage.setItem('_apptRecentPts', JSON.stringify(ids));
+  _apptRecentPtIds = [id].concat(_apptRecentPtIds.filter(function(x) { return x !== id; })).slice(0,3);
 }
 function _apptPtRowHtml(p, q) {
-  var col = _apptPtColor(p.id);
-  return '<div onclick="_apptSelectPatient(\'' + p.id + '\')" style="display:flex;align-items:center;gap:0.6rem;padding:0.48rem 0.85rem;cursor:pointer;border-bottom:1px solid var(--border-color);" onmouseover="this.style.background=\'var(--hover-bg,rgba(0,0,0,.04))\'" onmouseout="this.style.background=\'\'">' +
-    '<div style="width:28px;height:28px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:0.67rem;font-weight:700;color:#fff;flex-shrink:0;">' + _apptPtInitials(p) + '</div>' +
+  var col  = _apptPtColor(p.id);
+  var ts   = p.last_visit ? _apptFmtLastVisit(p.last_visit) : '';
+  return '<div onclick="_apptSelectPatient(\'' + p.id + '\')" style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.85rem;cursor:pointer;border-bottom:1px solid var(--border-color);" onmouseover="this.style.background=\'var(--hover-bg,rgba(0,0,0,.04))\'" onmouseout="this.style.background=\'\'">' +
+    '<div style="width:32px;height:32px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;">' + _apptPtInitials(p) + '</div>' +
     '<div style="min-width:0;flex:1;">' +
-      '<div style="font-size:0.82rem;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _apptPtHighlight(_apptPtFullName(p), q) + '</div>' +
-      '<div style="font-size:0.71rem;color:var(--text-secondary);">' + _apptPtHighlight('C.I. ' + (p.patient_id||'—'), q) + '</div>' +
+      '<div style="font-size:0.83rem;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _apptPtHighlight(_apptPtFullName(p), q) + '</div>' +
+      '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:1px;">' + _apptPtHighlight('C.I. ' + (p.patient_id||'—'), q) + '</div>' +
     '</div>' +
+    (ts ? '<div style="font-size:0.71rem;color:var(--text-secondary);white-space:nowrap;flex-shrink:0;padding-left:0.4rem;">' + ts + '</div>' : '') +
   '</div>';
 }
 function _apptRenderPtPanel(q) {
@@ -513,8 +528,28 @@ function _apptClearPatient() {
 /* ─── END PATIENT SEARCH PANEL ─── */
 
 async function openScheduleModal() {
-  var { data: patients } = await db.from('patients').select('id, name, lastname, patient_id').order('name');
-  _apptAllPatients = patients || [];
+  // Load patients and their last appointment date in parallel
+  var [ptRes, visitRes] = await Promise.all([
+    db.from('patients').select('id, name, lastname, patient_id').order('name'),
+    db.from('appointments').select('patient_id, date').neq('status', 'deleted').order('date', { ascending: false })
+  ]);
+
+  // Build last-visit map and recent list (top 3 unique patients by date)
+  var lastVisitMap = {};
+  var recentIds = [];
+  (visitRes.data || []).forEach(function(v) {
+    if (!lastVisitMap[v.patient_id]) {
+      lastVisitMap[v.patient_id] = v.date;
+      if (recentIds.length < 3) recentIds.push(v.patient_id);
+    }
+  });
+  _apptRecentPtIds = recentIds;
+
+  // Attach last_visit to each patient
+  _apptAllPatients = (ptRes.data || []).map(function(p) {
+    return Object.assign({}, p, { last_visit: lastVisitMap[p.id] || null });
+  });
+
   _apptClearPatient();
 
   // Cargar offices
@@ -574,7 +609,7 @@ async function saveQuickPatient() {
   }
 
   // Agregar al listado y seleccionar en el panel de búsqueda
-  _apptAllPatients.push(inserted);
+  _apptAllPatients.push(Object.assign({ last_visit: null }, inserted));
   _apptAllPatients.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
   _apptSelectPatient(inserted.id);
 
