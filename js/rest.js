@@ -1,14 +1,103 @@
 // ===== REPOSO MÉDICO (Supabase) =====
 
+/* ─── PATIENT SEARCH PANEL (Rest Modal) ─── */
+var _restAllPatients = [];
+var _restRecentPtIds = [];
+
+function _restPtRowHtml(p, q) {
+  var col = _apptPtColor(p.id);
+  var ts  = p.last_visit ? _apptFmtLastVisit(p.last_visit) : '';
+  return '<div onclick="_restSelectPatient(\'' + p.id + '\')" style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.85rem;cursor:pointer;border-bottom:1px solid var(--border-color);" onmouseover="this.style.background=\'var(--hover-bg,rgba(0,0,0,.04))\'" onmouseout="this.style.background=\'\'">' +
+    '<div style="width:32px;height:32px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;">' + _apptPtInitials(p) + '</div>' +
+    '<div style="min-width:0;flex:1;">' +
+      '<div style="font-size:0.83rem;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _apptPtHighlight(_apptPtFullName(p), q) + '</div>' +
+      '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:1px;">' + _apptPtHighlight('C.I. ' + (p.patient_id||'—'), q) + '</div>' +
+    '</div>' +
+    (ts ? '<div style="font-size:0.71rem;color:var(--text-secondary);white-space:nowrap;flex-shrink:0;padding-left:0.4rem;">' + ts + '</div>' : '') +
+  '</div>';
+}
+
+function _restRenderPtPanel(q) {
+  var el = document.getElementById('restPtPanelContent');
+  if (!el) return;
+  var label = '<div style="padding:0.32rem 0.85rem 0.12rem;font-size:0.67rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);">';
+  if (q) {
+    var t = q.toLowerCase();
+    var res = _restAllPatients.filter(function(p) {
+      var full = _apptPtFullName(p).toLowerCase();
+      var ci   = (p.patient_id||'').replace(/\./g,'');
+      return full.includes(t) || ci.includes(t.replace(/\./g,''));
+    });
+    el.innerHTML = res.length
+      ? label + res.length + ' resultado' + (res.length !== 1 ? 's' : '') + '</div>' + res.map(function(p) { return _restPtRowHtml(p, q); }).join('')
+      : '<div style="padding:0.85rem;text-align:center;font-size:0.8rem;color:var(--text-secondary);">Sin resultados para "<strong>' + q + '</strong>"</div>';
+  } else {
+    var rec    = _restRecentPtIds.map(function(id) { return _restAllPatients.find(function(p) { return p.id === id; }); }).filter(Boolean);
+    var recIds = rec.map(function(p) { return p.id; });
+    var rest   = _restAllPatients.filter(function(p) { return !recIds.includes(p.id); });
+    var html   = '';
+    if (rec.length)  html += label + 'Recientes</div>'           + rec.map(function(p) { return _restPtRowHtml(p, ''); }).join('');
+    if (rest.length) html += label + 'Todos los pacientes</div>' + rest.map(function(p) { return _restPtRowHtml(p, ''); }).join('');
+    if (!html)       html  = '<div style="padding:0.85rem;text-align:center;font-size:0.8rem;color:var(--text-secondary);">No hay pacientes registrados aún</div>';
+    el.innerHTML = html;
+  }
+}
+
+function _restOpenPtPanel() {
+  _restRenderPtPanel(document.getElementById('restPtInput').value.trim());
+  document.getElementById('restPtPanel').style.display = 'block';
+}
+
+function _restOnPtInput() {
+  _restRenderPtPanel(document.getElementById('restPtInput').value.trim());
+  document.getElementById('restPtPanel').style.display = 'block';
+}
+
+function _restSelectPatient(id) {
+  var p = _restAllPatients.find(function(x) { return String(x.id) === String(id); });
+  if (!p) return;
+  _restRecentPtIds = [p.id].concat(_restRecentPtIds.filter(function(x) { return x !== p.id; })).slice(0, 3);
+  document.getElementById('restPatient').value             = p.id;
+  document.getElementById('restPtPanel').style.display     = 'none';
+  document.getElementById('restPtTrigger').style.display   = 'none';
+  var sel = document.getElementById('restPtSelected');
+  sel.style.display = 'flex';
+  document.getElementById('restPtSelAv').style.background  = _apptPtColor(p.id);
+  document.getElementById('restPtSelAv').textContent       = _apptPtInitials(p);
+  document.getElementById('restPtSelName').textContent     = _apptPtFullName(p);
+  document.getElementById('restPtSelMeta').textContent     = 'C.I. ' + (p.patient_id || '—');
+}
+
+function _restClearPatient() {
+  document.getElementById('restPatient').value             = '';
+  document.getElementById('restPtTrigger').style.display   = '';
+  document.getElementById('restPtSelected').style.display  = 'none';
+  document.getElementById('restPtInput').value             = '';
+  document.getElementById('restPtPanel').style.display     = 'none';
+}
+
 async function openNewRestModal() {
-  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
-  var select = document.getElementById('restPatient');
-  select.innerHTML = '<option value="">Seleccionar</option>';
-  if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
+  var [ptRes, visitRes] = await Promise.all([
+    db.from('patients').select('id, name, lastname, patient_id').order('name'),
+    db.from('rest_records').select('patient_id, start_date').order('start_date', { ascending: false })
+  ]);
+  var lastVisitMap = {};
+  var recentIds = [];
+  (visitRes.data || []).forEach(function(v) {
+    if (!lastVisitMap[v.patient_id]) {
+      lastVisitMap[v.patient_id] = v.start_date || null;
+      if (recentIds.length < 3) recentIds.push(v.patient_id);
+    }
+  });
+  _restRecentPtIds = recentIds;
+  _restAllPatients = (ptRes.data || []).map(function(p) {
+    return Object.assign({}, p, { last_visit: lastVisitMap[p.id] || null });
+  });
   document.getElementById('restForm').reset();
   document.getElementById('restEditId').value = '';
   document.getElementById('restModalTitle').textContent = 'Nuevo Reposo Médico';
   document.getElementById('restStartDate').valueAsDate = new Date();
+  _restClearPatient();
   document.getElementById('restModal').style.display = 'block';
 }
 function closeRestModal() { document.getElementById('restModal').style.display = 'none'; }
@@ -103,7 +192,7 @@ async function editRest(id) {
   await openNewRestModal();
   document.getElementById('restEditId').value = id;
   document.getElementById('restModalTitle').textContent = 'Editar Reposo';
-  document.getElementById('restPatient').value = rest.patient_id;
+  _restSelectPatient(rest.patient_id);
   document.getElementById('restDays').value = rest.days || '';
   document.getElementById('restStartDate').value = rest.start_date || '';
   document.getElementById('restEndDate').value = rest.end_date || '';
@@ -144,10 +233,21 @@ function searchRest() {
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {
+  // Close patient panel when clicking outside
+  document.addEventListener('click', function(e) {
+    var wrap = document.getElementById('restPtSearchWrap');
+    var panel = document.getElementById('restPtPanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.style.display = 'none';
+  });
+
   var form = document.getElementById('restForm');
   if (form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (!document.getElementById('restPatient').value) {
+        showToast('error', 'Error', 'Selecciona un paciente');
+        return;
+      }
       _clearRestDateError();
 
       var days     = parseInt(document.getElementById('restDays').value);

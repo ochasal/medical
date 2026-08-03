@@ -1012,8 +1012,28 @@
     <div class="modal-body">
       <form id="prescriptionForm" class="enhanced-form">
         <input type="hidden" id="prescriptionEditId" />
-        <div class="form-grid">
-          <div class="form-group"><label>Paciente *</label><select id="prescriptionPatient" required><option value="">Seleccionar</option></select></div>
+        <input type="hidden" id="prescriptionPatient" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;align-items:start;">
+          <div class="form-group">
+            <label>Paciente *</label>
+            <div id="rxPtSearchWrap" style="position:relative;">
+              <div id="rxPtTrigger" style="position:relative;">
+                <i class="fas fa-search" style="position:absolute;left:0.65rem;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:0.78rem;pointer-events:none;z-index:1;"></i>
+                <input id="rxPtInput" type="text" autocomplete="off" placeholder="Buscar por nombre, apellido o C.I." oninput="_rxOnPtInput()" onfocus="_rxOpenPtPanel()" style="width:100%;padding:0.45rem 0.75rem 0.45rem 2.1rem;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-primary);font-size:0.83rem;color:var(--text-primary);cursor:text;transition:border-color .15s;box-sizing:border-box;outline:none;" />
+              </div>
+              <div id="rxPtSelected" style="display:none;align-items:center;gap:0.6rem;padding:0.42rem 0.65rem;border:1.5px solid var(--accent-color);border-radius:var(--radius-md);background:var(--hover-bg,rgba(0,0,0,.03));">
+                <div id="rxPtSelAv" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;"></div>
+                <div>
+                  <div id="rxPtSelName" style="font-size:0.85rem;font-weight:600;color:var(--text-primary);"></div>
+                  <div id="rxPtSelMeta" style="font-size:0.75rem;color:var(--text-secondary);"></div>
+                </div>
+                <button type="button" onclick="_rxClearPatient()" style="margin-left:auto;background:none;border:1px solid var(--border-color);border-radius:6px;padding:0.2rem 0.5rem;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;">Cambiar</button>
+              </div>
+              <div id="rxPtPanel" style="display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:9999;background:var(--bg-primary);border:1.5px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden;">
+                <div id="rxPtPanelContent" style="max-height:220px;overflow-y:auto;"></div>
+              </div>
+            </div>
+          </div>
           <div class="form-group"><label>Fecha</label><input type="date" id="prescriptionDate" /></div>
         </div>
 
@@ -1368,8 +1388,28 @@
     <div class="modal-body">
       <form id="restForm" class="enhanced-form">
         <input type="hidden" id="restEditId" />
+        <input type="hidden" id="restPatient" />
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.85rem;">
-          <div class="form-group" style="grid-column:1/3"><label>Paciente *</label><select id="restPatient" required><option value="">Seleccionar</option></select></div>
+          <div class="form-group" style="grid-column:1/3">
+            <label>Paciente *</label>
+            <div id="restPtSearchWrap" style="position:relative;">
+              <div id="restPtTrigger" style="position:relative;">
+                <i class="fas fa-search" style="position:absolute;left:0.65rem;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:0.78rem;pointer-events:none;z-index:1;"></i>
+                <input id="restPtInput" type="text" autocomplete="off" placeholder="Buscar por nombre, apellido o C.I." oninput="_restOnPtInput()" onfocus="_restOpenPtPanel()" style="width:100%;padding:0.45rem 0.75rem 0.45rem 2.1rem;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-primary);font-size:0.83rem;color:var(--text-primary);cursor:text;transition:border-color .15s;box-sizing:border-box;outline:none;" />
+              </div>
+              <div id="restPtSelected" style="display:none;align-items:center;gap:0.6rem;padding:0.42rem 0.65rem;border:1.5px solid var(--accent-color);border-radius:var(--radius-md);background:var(--hover-bg,rgba(0,0,0,.03));">
+                <div id="restPtSelAv" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;"></div>
+                <div>
+                  <div id="restPtSelName" style="font-size:0.85rem;font-weight:600;color:var(--text-primary);"></div>
+                  <div id="restPtSelMeta" style="font-size:0.75rem;color:var(--text-secondary);"></div>
+                </div>
+                <button type="button" onclick="_restClearPatient()" style="margin-left:auto;background:none;border:1px solid var(--border-color);border-radius:6px;padding:0.2rem 0.5rem;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;">Cambiar</button>
+              </div>
+              <div id="restPtPanel" style="display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:9999;background:var(--bg-primary);border:1.5px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden;">
+                <div id="restPtPanelContent" style="max-height:200px;overflow-y:auto;"></div>
+              </div>
+            </div>
+          </div>
           <div class="form-group"><label>Días de reposo *</label><input type="number" id="restDays" required min="1" placeholder="Ej: 3" /></div>
           <div class="form-group"><label>Desde *</label><input type="date" id="restStartDate" required /></div>
           <div class="form-group"><label>Hasta</label><input type="date" id="restEndDate" /></div>

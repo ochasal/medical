@@ -43,17 +43,105 @@ function getMedicationsFromForm() {
   return medications;
 }
 
+/* ─── PATIENT SEARCH PANEL (Prescription Modal) ─── */
+var _rxAllPatients = [];
+var _rxRecentPtIds = [];
+
+function _rxPtRowHtml(p, q) {
+  var col = _apptPtColor(p.id);
+  var ts  = p.last_visit ? _apptFmtLastVisit(p.last_visit) : '';
+  return '<div onclick="_rxSelectPatient(\'' + p.id + '\')" style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.85rem;cursor:pointer;border-bottom:1px solid var(--border-color);" onmouseover="this.style.background=\'var(--hover-bg,rgba(0,0,0,.04))\'" onmouseout="this.style.background=\'\'">' +
+    '<div style="width:32px;height:32px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0;">' + _apptPtInitials(p) + '</div>' +
+    '<div style="min-width:0;flex:1;">' +
+      '<div style="font-size:0.83rem;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _apptPtHighlight(_apptPtFullName(p), q) + '</div>' +
+      '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:1px;">' + _apptPtHighlight('C.I. ' + (p.patient_id||'—'), q) + '</div>' +
+    '</div>' +
+    (ts ? '<div style="font-size:0.71rem;color:var(--text-secondary);white-space:nowrap;flex-shrink:0;padding-left:0.4rem;">' + ts + '</div>' : '') +
+  '</div>';
+}
+
+function _rxRenderPtPanel(q) {
+  var el = document.getElementById('rxPtPanelContent');
+  if (!el) return;
+  var label = '<div style="padding:0.32rem 0.85rem 0.12rem;font-size:0.67rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);">';
+  if (q) {
+    var t = q.toLowerCase();
+    var res = _rxAllPatients.filter(function(p) {
+      var full = _apptPtFullName(p).toLowerCase();
+      var ci   = (p.patient_id||'').replace(/\./g,'');
+      return full.includes(t) || ci.includes(t.replace(/\./g,''));
+    });
+    el.innerHTML = res.length
+      ? label + res.length + ' resultado' + (res.length !== 1 ? 's' : '') + '</div>' + res.map(function(p) { return _rxPtRowHtml(p, q); }).join('')
+      : '<div style="padding:0.85rem;text-align:center;font-size:0.8rem;color:var(--text-secondary);">Sin resultados para "<strong>' + q + '</strong>"</div>';
+  } else {
+    var rec    = _rxRecentPtIds.map(function(id) { return _rxAllPatients.find(function(p) { return p.id === id; }); }).filter(Boolean);
+    var recIds = rec.map(function(p) { return p.id; });
+    var rest   = _rxAllPatients.filter(function(p) { return !recIds.includes(p.id); });
+    var html   = '';
+    if (rec.length)  html += label + 'Recientes</div>'           + rec.map(function(p) { return _rxPtRowHtml(p, ''); }).join('');
+    if (rest.length) html += label + 'Todos los pacientes</div>' + rest.map(function(p) { return _rxPtRowHtml(p, ''); }).join('');
+    if (!html)       html  = '<div style="padding:0.85rem;text-align:center;font-size:0.8rem;color:var(--text-secondary);">No hay pacientes registrados aún</div>';
+    el.innerHTML = html;
+  }
+}
+
+function _rxOpenPtPanel() {
+  _rxRenderPtPanel(document.getElementById('rxPtInput').value.trim());
+  document.getElementById('rxPtPanel').style.display = 'block';
+}
+
+function _rxOnPtInput() {
+  _rxRenderPtPanel(document.getElementById('rxPtInput').value.trim());
+  document.getElementById('rxPtPanel').style.display = 'block';
+}
+
+function _rxSelectPatient(id) {
+  var p = _rxAllPatients.find(function(x) { return String(x.id) === String(id); });
+  if (!p) return;
+  _rxRecentPtIds = [p.id].concat(_rxRecentPtIds.filter(function(x) { return x !== p.id; })).slice(0, 3);
+  document.getElementById('prescriptionPatient').value      = p.id;
+  document.getElementById('rxPtPanel').style.display        = 'none';
+  document.getElementById('rxPtTrigger').style.display      = 'none';
+  var sel = document.getElementById('rxPtSelected');
+  sel.style.display = 'flex';
+  document.getElementById('rxPtSelAv').style.background     = _apptPtColor(p.id);
+  document.getElementById('rxPtSelAv').textContent          = _apptPtInitials(p);
+  document.getElementById('rxPtSelName').textContent        = _apptPtFullName(p);
+  document.getElementById('rxPtSelMeta').textContent        = 'C.I. ' + (p.patient_id || '—');
+}
+
+function _rxClearPatient() {
+  document.getElementById('prescriptionPatient').value      = '';
+  document.getElementById('rxPtTrigger').style.display      = '';
+  document.getElementById('rxPtSelected').style.display     = 'none';
+  document.getElementById('rxPtInput').value                = '';
+  document.getElementById('rxPtPanel').style.display        = 'none';
+}
+
 async function openNewPrescriptionModal() {
-  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
-  var select = document.getElementById('prescriptionPatient');
-  select.innerHTML = '<option value="">Seleccionar</option>';
-  if (patients) patients.forEach(function(p) { select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>'; });
+  var [ptRes, rxRes] = await Promise.all([
+    db.from('patients').select('id, name, lastname, patient_id').order('name'),
+    db.from('prescriptions').select('patient_id, date').order('date', { ascending: false })
+  ]);
+  var lastVisitMap = {};
+  var recentIds = [];
+  (rxRes.data || []).forEach(function(v) {
+    if (!lastVisitMap[v.patient_id]) {
+      lastVisitMap[v.patient_id] = v.date || null;
+      if (recentIds.length < 3) recentIds.push(v.patient_id);
+    }
+  });
+  _rxRecentPtIds = recentIds;
+  _rxAllPatients = (ptRes.data || []).map(function(p) {
+    return Object.assign({}, p, { last_visit: lastVisitMap[p.id] || null });
+  });
   document.getElementById('prescriptionForm').reset();
   document.getElementById('prescriptionEditId').value = '';
   document.getElementById('prescriptionModalTitle').textContent = 'Nuevo Récipe';
   document.getElementById('prescriptionDate').valueAsDate = new Date();
-  // Reset medications to one empty row
   document.getElementById('medicationsContainer').innerHTML = '<div class="medication-row" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 0.65rem; margin-bottom: 0.5rem; position: relative;">' + _medRowHtml(null, false) + '</div>';
+  _rxClearPatient();
   document.getElementById('prescriptionModal').style.display = 'block';
 }
 function closePrescriptionModal() { document.getElementById('prescriptionModal').style.display = 'none'; }
@@ -105,7 +193,7 @@ async function editPrescription(id) {
   await openNewPrescriptionModal();
   document.getElementById('prescriptionEditId').value = id;
   document.getElementById('prescriptionModalTitle').textContent = 'Editar Récipe';
-  document.getElementById('prescriptionPatient').value = rx.patient_id;
+  _rxSelectPatient(rx.patient_id);
   document.getElementById('prescriptionDate').value = rx.date || '';
   document.getElementById('prescriptionNotes').value = rx.notes || '';
   // Load medications into form
@@ -182,10 +270,21 @@ function exportPrescriptionsPDF() {
 
 // Form submission
 document.addEventListener('DOMContentLoaded', function() {
+  // Close patient panel when clicking outside
+  document.addEventListener('click', function(e) {
+    var wrap = document.getElementById('rxPtSearchWrap');
+    var panel = document.getElementById('rxPtPanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.style.display = 'none';
+  });
+
   var form = document.getElementById('prescriptionForm');
   if (form) {
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (!document.getElementById('prescriptionPatient').value) {
+        showToast('error', 'Error', 'Selecciona un paciente');
+        return;
+      }
       var medications = getMedicationsFromForm();
       if (medications.length === 0) { showToast('error', 'Error', 'Agregue al menos un medicamento'); return; }
       var editId = document.getElementById('prescriptionEditId').value;
