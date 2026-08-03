@@ -397,7 +397,7 @@ async function editAppointment(id) {
   document.getElementById('scheduleEditId').value = id;
   document.getElementById('scheduleModalTitle').textContent = 'Editar Cita';
   document.getElementById('scheduleSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Guardar cambios';
-  document.getElementById('schedulePatient').value = apt.patient_id || '';
+  _apptSelectPatient(apt.patient_id || '');
   document.getElementById('scheduleDate').value = apt.date || '';
   document.getElementById('scheduleDate').min = '';
   document.getElementById('scheduleType').value = apt.type || '';
@@ -422,13 +422,100 @@ async function editAppointment(id) {
   }
 }
 
-async function openScheduleModal() {
-  var { data: patients } = await db.from('patients').select('id, name, lastname').order('name');
-  var select = document.getElementById('schedulePatient');
-  select.innerHTML = '<option value="">Seleccionar paciente</option>';
-  if (patients) patients.forEach(function(p) {
-    select.innerHTML += '<option value="' + p.id + '">' + p.name + ' ' + p.lastname + '</option>';
+/* ─── PATIENT SEARCH PANEL ─── */
+var _apptAllPatients = [];
+var _PT_COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#EF4444','#6366F1','#0EA5E9','#F97316','#14B8A6'];
+function _apptPtColor(id) { return _PT_COLORS[Math.abs(parseInt(String(id).replace(/\D/g,'').slice(-4)||0)) % _PT_COLORS.length]; }
+function _apptPtInitials(p) { return ((p.name||'')[0]||'').toUpperCase() + ((p.lastname||'')[0]||'').toUpperCase(); }
+function _apptPtFullName(p) { return (p.name||'') + ' ' + (p.lastname||''); }
+function _apptPtHighlight(text, q) {
+  if (!q) return text;
+  var esc = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp('(' + esc + ')', 'gi'), '<mark style="background:#FEF08A;color:inherit;border-radius:2px;padding:0 1px;">$1</mark>');
+}
+function _apptPtFilter(q) {
+  var t = q.toLowerCase();
+  return _apptAllPatients.filter(function(p) {
+    var full = _apptPtFullName(p).toLowerCase();
+    var ci   = (p.patient_id||'').replace(/\./g,'');
+    return full.includes(t) || ci.includes(t.replace(/\./g,''));
   });
+}
+function _apptPtGetRecent() {
+  var ids = JSON.parse(localStorage.getItem('_apptRecentPts') || '[]');
+  return ids.map(function(id) { return _apptAllPatients.find(function(p) { return p.id === id; }); }).filter(Boolean);
+}
+function _apptPtSaveRecent(id) {
+  var ids = JSON.parse(localStorage.getItem('_apptRecentPts') || '[]');
+  ids = [id].concat(ids.filter(function(x) { return x !== id; })).slice(0,3);
+  localStorage.setItem('_apptRecentPts', JSON.stringify(ids));
+}
+function _apptPtRowHtml(p, q) {
+  var col = _apptPtColor(p.id);
+  return '<div onclick="_apptSelectPatient(\'' + p.id + '\')" style="display:flex;align-items:center;gap:0.6rem;padding:0.48rem 0.85rem;cursor:pointer;border-bottom:1px solid var(--border-color);" onmouseover="this.style.background=\'var(--hover-bg,rgba(0,0,0,.04))\'" onmouseout="this.style.background=\'\'">' +
+    '<div style="width:28px;height:28px;border-radius:50%;background:' + col + ';display:flex;align-items:center;justify-content:center;font-size:0.67rem;font-weight:700;color:#fff;flex-shrink:0;">' + _apptPtInitials(p) + '</div>' +
+    '<div style="min-width:0;flex:1;">' +
+      '<div style="font-size:0.82rem;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _apptPtHighlight(_apptPtFullName(p), q) + '</div>' +
+      '<div style="font-size:0.71rem;color:var(--text-secondary);">' + _apptPtHighlight('C.I. ' + (p.patient_id||'—'), q) + '</div>' +
+    '</div>' +
+  '</div>';
+}
+function _apptRenderPtPanel(q) {
+  var el = document.getElementById('ptPanelContent');
+  if (!el) return;
+  var label = '<div style="padding:0.32rem 0.85rem 0.12rem;font-size:0.67rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);">';
+  if (q) {
+    var res = _apptPtFilter(q);
+    el.innerHTML = res.length
+      ? label + res.length + ' resultado' + (res.length!==1?'s':'') + '</div>' + res.map(function(p){return _apptPtRowHtml(p,q);}).join('')
+      : '<div style="padding:0.85rem;text-align:center;font-size:0.8rem;color:var(--text-secondary);">Sin resultados para "<strong>' + q + '</strong>"</div>';
+  } else {
+    var rec    = _apptPtGetRecent();
+    var recIds = rec.map(function(p){return p.id;});
+    var rest   = _apptAllPatients.filter(function(p){return !recIds.includes(p.id);});
+    var html   = '';
+    if (rec.length)  html += label + 'Recientes</div>'             + rec.map(function(p){return _apptPtRowHtml(p,'');}).join('');
+    if (rest.length) html += label + 'Todos los pacientes</div>'   + rest.map(function(p){return _apptPtRowHtml(p,'');}).join('');
+    if (!html)       html  = '<div style="padding:0.85rem;text-align:center;font-size:0.8rem;color:var(--text-secondary);">No hay pacientes registrados aún</div>';
+    el.innerHTML = html;
+  }
+}
+function _apptOpenPtPanel() {
+  _apptRenderPtPanel(document.getElementById('ptInput').value.trim());
+  document.getElementById('ptPanel').style.display = 'block';
+}
+function _apptOnPtInput() {
+  _apptRenderPtPanel(document.getElementById('ptInput').value.trim());
+  document.getElementById('ptPanel').style.display = 'block';
+}
+function _apptSelectPatient(id) {
+  var p = _apptAllPatients.find(function(x){ return String(x.id) === String(id); });
+  if (!p) return;
+  _apptPtSaveRecent(p.id);
+  document.getElementById('schedulePatient').value = p.id;
+  document.getElementById('ptTrigger').style.display  = 'none';
+  document.getElementById('ptSelected').style.display = 'flex';
+  document.getElementById('ptPanel').style.display    = 'none';
+  document.getElementById('ptInput').value = '';
+  var col = _apptPtColor(p.id);
+  document.getElementById('ptSelAv').style.background = col;
+  document.getElementById('ptSelAv').textContent      = _apptPtInitials(p);
+  document.getElementById('ptSelName').textContent    = _apptPtFullName(p);
+  document.getElementById('ptSelMeta').textContent    = 'C.I. ' + (p.patient_id||'—');
+}
+function _apptClearPatient() {
+  document.getElementById('schedulePatient').value    = '';
+  document.getElementById('ptTrigger').style.display  = '';
+  document.getElementById('ptSelected').style.display = 'none';
+  document.getElementById('ptPanel').style.display    = 'none';
+  document.getElementById('ptInput').value            = '';
+}
+/* ─── END PATIENT SEARCH PANEL ─── */
+
+async function openScheduleModal() {
+  var { data: patients } = await db.from('patients').select('id, name, lastname, patient_id').order('name');
+  _apptAllPatients = patients || [];
+  _apptClearPatient();
 
   // Cargar offices
   var { data: offices } = await db.from('offices').select('id, name').order('name');
@@ -486,13 +573,10 @@ async function saveQuickPatient() {
     return;
   }
 
-  // Agregar la opción al select y seleccionarla
-  var select = document.getElementById('schedulePatient');
-  var opt = document.createElement('option');
-  opt.value = inserted.id;
-  opt.textContent = inserted.name + ' ' + inserted.lastname;
-  select.appendChild(opt);
-  select.value = inserted.id;
+  // Agregar al listado y seleccionar en el panel de búsqueda
+  _apptAllPatients.push(inserted);
+  _apptAllPatients.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  _apptSelectPatient(inserted.id);
 
   closeQuickPatientModal();
   showToast('success', 'Registrado', name + ' ' + lastname + ' agregado correctamente');
@@ -674,6 +758,13 @@ function searchAppointments() {
   rows.forEach(function(row) { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
 }
 
+// Close patient panel when clicking outside
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('ptSearchWrap');
+  var panel = document.getElementById('ptPanel');
+  if (wrap && panel && !wrap.contains(e.target)) panel.style.display = 'none';
+});
+
 // Schedule form submission
 document.addEventListener('DOMContentLoaded', function() {
   populateScheduleTypeSelect();
@@ -695,6 +786,11 @@ document.addEventListener('DOMContentLoaded', function() {
       // Validar hora pasada solo para citas nuevas
       if (!editId && !_validateScheduleTime()) {
         showToast('error', 'Hora inválida', 'La hora seleccionada ya pasó. Elige una hora futura.');
+        return;
+      }
+
+      if (!document.getElementById('schedulePatient').value) {
+        showToast('error', 'Error', 'Selecciona un paciente antes de programar la cita');
         return;
       }
 

@@ -865,7 +865,24 @@
                 <i class="fas fa-user-plus"></i> Nuevo
               </button>
             </label>
-            <select id="schedulePatient" required><option value="">Seleccionar paciente</option></select>
+            <input type="hidden" id="schedulePatient" />
+            <div id="ptSearchWrap" style="position:relative;">
+              <div id="ptTrigger" onclick="document.getElementById('ptInput').focus()" style="display:flex;align-items:center;gap:0.5rem;padding:0.42rem 0.65rem;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-primary);cursor:text;transition:border-color .15s;">
+                <i class="fas fa-search" style="color:var(--text-secondary);font-size:0.76rem;flex-shrink:0;pointer-events:none;"></i>
+                <input id="ptInput" type="text" autocomplete="off" placeholder="Buscar por nombre, apellido o C.I." oninput="_apptOnPtInput()" onfocus="_apptOpenPtPanel()" style="border:none;outline:none;background:transparent;font-size:0.83rem;color:var(--text-primary);width:100%;padding:0;" />
+              </div>
+              <div id="ptSelected" style="display:none;align-items:center;gap:0.6rem;padding:0.42rem 0.65rem;border:1.5px solid var(--accent-color);border-radius:var(--radius-md);background:var(--hover-bg,rgba(0,0,0,.03));">
+                <div id="ptSelAv" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.67rem;font-weight:700;color:#fff;flex-shrink:0;"></div>
+                <div style="min-width:0;flex:1;">
+                  <div id="ptSelName" style="font-size:0.82rem;font-weight:600;color:var(--accent-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                  <div id="ptSelMeta" style="font-size:0.71rem;color:var(--text-secondary);"></div>
+                </div>
+                <button type="button" onclick="_apptClearPatient()" style="background:none;border:none;color:var(--accent-color);font-size:0.72rem;font-weight:600;text-decoration:underline;cursor:pointer;white-space:nowrap;flex-shrink:0;">Cambiar</button>
+              </div>
+              <div id="ptPanel" style="display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:9999;background:var(--bg-primary);border:1.5px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden;">
+                <div id="ptPanelContent" style="max-height:230px;overflow-y:auto;"></div>
+              </div>
+            </div>
           </div>
           <div class="form-group" style="margin:0"><label>Fecha *</label><input type="date" id="scheduleDate" required onchange="_updateScheduleTimeMin()" /></div>
           <div class="form-group" style="margin:0">
