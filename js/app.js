@@ -228,6 +228,9 @@ function initApp() {
 
 // ===== DOM READY =====
 document.addEventListener('DOMContentLoaded', function() {
+  // Forzar idioma español en todos los date pickers (nativos del navegador)
+  document.querySelectorAll('input[type="date"]').forEach(function(el) { el.lang = 'es'; });
+
   // Hide app until auth check
   document.querySelector('.header').style.display = 'none';
   document.querySelector('.main-layout').style.display = 'none';

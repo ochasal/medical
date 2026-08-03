@@ -34,7 +34,7 @@ function refreshAutomationStatus() {
   if (!container) return;
   var rules = [
     { name: 'Recordatorios de Citas', enabled: true, desc: 'Envía recordatorios 24h y 2h antes' },
-    { name: 'Monitoreo de Ausencias', enabled: true, desc: 'Seguimiento automático de no-shows' },
+    { name: 'Monitoreo de Ausencias', enabled: true, desc: 'Seguimiento automático de pacientes que no asistieron' },
     { name: 'Alertas de Récipes', enabled: true, desc: 'Notificaciones de renovación' },
     { name: 'Análisis de Riesgos', enabled: true, desc: 'Evaluación automática de riesgos' }
   ];
