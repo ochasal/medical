@@ -1,20 +1,25 @@
 // ===== RÉCIPES (Supabase) =====
 
+function _medRowHtml(m, showRemove) {
+  m = m || {};
+  return (showRemove ? '<button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:0.5rem;right:0.5rem;background:var(--danger-color);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.8rem;">&times;</button>' : '') +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.7rem;">' +
+      '<div class="form-group" style="grid-column:1/3"><label>Medicamento *</label><input type="text" class="med-name" required placeholder="Ej: Amoxicilina" value="' + (m.name || '') + '" /></div>' +
+      '<div class="form-group" style="grid-column:3/5"><label>Presentación</label><input type="text" class="med-presentation" placeholder="Ej: 500mg cápsulas" value="' + (m.presentation || '') + '" /></div>' +
+      '<div class="form-group"><label>Dosis *</label><input type="text" class="med-dosage" required placeholder="Ej: 500mg" value="' + (m.dosage || '') + '" /></div>' +
+      '<div class="form-group"><label>Frecuencia *</label><input type="text" class="med-frequency" required placeholder="Ej: Cada 8 horas" value="' + (m.frequency || '') + '" /></div>' +
+      '<div class="form-group"><label>Duración</label><input type="text" class="med-duration" placeholder="Ej: 7 días" value="' + (m.duration || '') + '" /></div>' +
+      '<div class="form-group"><label>Cantidad</label><input type="text" class="med-quantity" placeholder="Ej: 21 cápsulas" value="' + (m.quantity || '') + '" /></div>' +
+      '<div class="form-group" style="grid-column:1/-1"><label>Indicaciones</label><input type="text" class="med-instructions" placeholder="Ej: Tomar con alimentos" value="' + (m.instructions || '') + '" /></div>' +
+    '</div>';
+}
+
 function addMedicationRow() {
   var container = document.getElementById('medicationsContainer');
   var row = document.createElement('div');
   row.className = 'medication-row';
   row.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; position: relative;';
-  row.innerHTML = '<button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:0.5rem;right:0.5rem;background:var(--danger-color);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.8rem;">&times;</button>' +
-    '<div class="form-grid">' +
-      '<div class="form-group"><label>Medicamento *</label><input type="text" class="med-name" required placeholder="Ej: Amoxicilina" /></div>' +
-      '<div class="form-group"><label>Presentación</label><input type="text" class="med-presentation" placeholder="Ej: 500mg cápsulas" /></div>' +
-      '<div class="form-group"><label>Dosis *</label><input type="text" class="med-dosage" required placeholder="Ej: 500mg" /></div>' +
-      '<div class="form-group"><label>Frecuencia *</label><input type="text" class="med-frequency" required placeholder="Ej: Cada 8 horas" /></div>' +
-      '<div class="form-group"><label>Duración</label><input type="text" class="med-duration" placeholder="Ej: 7 días" /></div>' +
-      '<div class="form-group"><label>Cantidad</label><input type="text" class="med-quantity" placeholder="Ej: 21 cápsulas" /></div>' +
-    '</div>' +
-    '<div class="form-group"><label>Indicaciones</label><input type="text" class="med-instructions" placeholder="Ej: Tomar con alimentos" /></div>';
+  row.innerHTML = _medRowHtml(null, true);
   container.appendChild(row);
 }
 
@@ -48,7 +53,7 @@ async function openNewPrescriptionModal() {
   document.getElementById('prescriptionModalTitle').textContent = 'Nuevo Récipe';
   document.getElementById('prescriptionDate').valueAsDate = new Date();
   // Reset medications to one empty row
-  document.getElementById('medicationsContainer').innerHTML = '<div class="medication-row" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;"><div class="form-grid"><div class="form-group"><label>Medicamento *</label><input type="text" class="med-name" required placeholder="Ej: Amoxicilina" /></div><div class="form-group"><label>Presentación</label><input type="text" class="med-presentation" placeholder="Ej: 500mg cápsulas" /></div><div class="form-group"><label>Dosis *</label><input type="text" class="med-dosage" required placeholder="Ej: 500mg" /></div><div class="form-group"><label>Frecuencia *</label><input type="text" class="med-frequency" required placeholder="Ej: Cada 8 horas" /></div><div class="form-group"><label>Duración</label><input type="text" class="med-duration" placeholder="Ej: 7 días" /></div><div class="form-group"><label>Cantidad</label><input type="text" class="med-quantity" placeholder="Ej: 21 cápsulas" /></div></div><div class="form-group"><label>Indicaciones</label><input type="text" class="med-instructions" placeholder="Ej: Tomar con alimentos" /></div></div>';
+  document.getElementById('medicationsContainer').innerHTML = '<div class="medication-row" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; position: relative;">' + _medRowHtml(null, false) + '</div>';
   document.getElementById('prescriptionModal').style.display = 'block';
 }
 function closePrescriptionModal() { document.getElementById('prescriptionModal').style.display = 'none'; }
@@ -112,16 +117,7 @@ async function editPrescription(id) {
       var row = document.createElement('div');
       row.className = 'medication-row';
       row.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; position: relative;';
-      row.innerHTML = (i > 0 ? '<button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:0.5rem;right:0.5rem;background:var(--danger-color);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.8rem;">&times;</button>' : '') +
-        '<div class="form-grid">' +
-          '<div class="form-group"><label>Medicamento *</label><input type="text" class="med-name" required value="' + (m.name || '') + '" /></div>' +
-          '<div class="form-group"><label>Presentación</label><input type="text" class="med-presentation" value="' + (m.presentation || '') + '" /></div>' +
-          '<div class="form-group"><label>Dosis *</label><input type="text" class="med-dosage" required value="' + (m.dosage || '') + '" /></div>' +
-          '<div class="form-group"><label>Frecuencia *</label><input type="text" class="med-frequency" required value="' + (m.frequency || '') + '" /></div>' +
-          '<div class="form-group"><label>Duración</label><input type="text" class="med-duration" value="' + (m.duration || '') + '" /></div>' +
-          '<div class="form-group"><label>Cantidad</label><input type="text" class="med-quantity" value="' + (m.quantity || '') + '" /></div>' +
-        '</div>' +
-        '<div class="form-group"><label>Indicaciones</label><input type="text" class="med-instructions" value="' + (m.instructions || '') + '" /></div>';
+      row.innerHTML = _medRowHtml(m, i > 0);
       container.appendChild(row);
     });
   }
