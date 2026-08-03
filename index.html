@@ -1018,14 +1018,14 @@
         </div>
 
         <!-- Medicamentos -->
-        <div style="margin-top: 1.5rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div style="margin-top: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <h4 style="margin: 0;"><i class="fas fa-pills"></i> Medicamentos</h4>
             <button type="button" onclick="addMedicationRow()" style="background:var(--success-color);color:white;border:none;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;"><i class="fas fa-plus"></i> Agregar</button>
           </div>
           <div id="medicationsContainer">
-            <div class="medication-row" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;">
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.7rem;">
+            <div class="medication-row" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 0.65rem; margin-bottom: 0.5rem;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.5rem;">
                 <div class="form-group" style="grid-column:1/3"><label>Medicamento *</label><input type="text" class="med-name" required placeholder="Ej: Amoxicilina" /></div>
                 <div class="form-group" style="grid-column:3/5"><label>Presentación</label><input type="text" class="med-presentation" placeholder="Ej: 500mg cápsulas" /></div>
                 <div class="form-group"><label>Dosis *</label><input type="text" class="med-dosage" required placeholder="Ej: 500mg" /></div>
@@ -1038,7 +1038,7 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 1rem;"><label>Notas generales</label><textarea id="prescriptionNotes" rows="2" placeholder="Indicaciones generales del récipe..."></textarea></div>
+        <div class="form-group" style="margin-top: 0.5rem;"><label>Notas generales</label><textarea id="prescriptionNotes" rows="1" placeholder="Indicaciones generales del récipe..."></textarea></div>
 
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closePrescriptionModal()">Cancelar</button>
@@ -1314,8 +1314,28 @@
     <div class="modal-body">
       <form id="orderForm" class="enhanced-form">
         <input type="hidden" id="orderEditId" />
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.85rem;">
-          <div class="form-group"><label>Paciente *</label><select id="orderPatient" required><option value="">Seleccionar</option></select></div>
+        <input type="hidden" id="orderPatient" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Paciente *</label>
+            <div id="orderPtSearchWrap" style="position:relative;">
+              <div id="orderPtTrigger" style="position:relative;">
+                <i class="fas fa-search" style="position:absolute;left:0.65rem;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:0.78rem;pointer-events:none;z-index:1;"></i>
+                <input id="orderPtInput" type="text" autocomplete="off" placeholder="Buscar por nombre, apellido o C.I." oninput="_orderOnPtInput()" onfocus="_orderOpenPtPanel()" style="width:100%;padding:0.45rem 0.75rem 0.45rem 2.1rem;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-primary);font-size:0.83rem;color:var(--text-primary);cursor:text;transition:border-color .15s;box-sizing:border-box;outline:none;" />
+              </div>
+              <div id="orderPtSelected" style="display:none;align-items:center;gap:0.6rem;padding:0.42rem 0.65rem;border:1.5px solid var(--accent-color);border-radius:var(--radius-md);background:var(--hover-bg,rgba(0,0,0,.03));">
+                <div id="orderPtSelAv" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0;"></div>
+                <div>
+                  <div id="orderPtSelName" style="font-size:0.85rem;font-weight:600;color:var(--text-primary);"></div>
+                  <div id="orderPtSelMeta" style="font-size:0.75rem;color:var(--text-secondary);"></div>
+                </div>
+                <button type="button" onclick="_orderClearPatient()" style="margin-left:auto;background:none;border:1px solid var(--border-color);border-radius:6px;padding:0.2rem 0.5rem;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;">Cambiar</button>
+              </div>
+              <div id="orderPtPanel" style="display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:9999;background:var(--bg-primary);border:1.5px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);overflow:hidden;">
+                <div id="orderPtPanelContent" style="max-height:220px;overflow-y:auto;"></div>
+              </div>
+            </div>
+          </div>
           <div class="form-group"><label>Tipo *</label>
             <select id="orderType" required>
               <option value="">Seleccionar</option>
@@ -1348,14 +1368,14 @@
     <div class="modal-body">
       <form id="restForm" class="enhanced-form">
         <input type="hidden" id="restEditId" />
-        <div class="form-grid">
-          <div class="form-group"><label>Paciente *</label><select id="restPatient" required><option value="">Seleccionar</option></select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.85rem;">
+          <div class="form-group" style="grid-column:1/3"><label>Paciente *</label><select id="restPatient" required><option value="">Seleccionar</option></select></div>
           <div class="form-group"><label>Días de reposo *</label><input type="number" id="restDays" required min="1" placeholder="Ej: 3" /></div>
           <div class="form-group"><label>Desde *</label><input type="date" id="restStartDate" required /></div>
           <div class="form-group"><label>Hasta</label><input type="date" id="restEndDate" /></div>
-          <div style="grid-column: 1 / -1; margin-top: -0.5rem;"><span id="restDateError" style="color: var(--danger-color); font-size: 0.82rem;"></span></div>
-          <div class="form-group" style="grid-column: 1 / -1"><label>Diagnóstico *</label><input type="text" id="restDiagnosis" required placeholder="Diagnóstico que justifica el reposo" /></div>
-          <div class="form-group" style="grid-column: 1 / -1"><label>Observaciones</label><textarea id="restNotes" rows="2" placeholder="Observaciones..."></textarea></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:0.4rem;"><span id="restDateError" style="color:var(--danger-color);font-size:0.82rem;"></span></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Diagnóstico *</label><input type="text" id="restDiagnosis" required placeholder="Diagnóstico que justifica el reposo" /></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Observaciones</label><textarea id="restNotes" rows="1" placeholder="Observaciones..."></textarea></div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" onclick="closeRestModal()">Cancelar</button>
